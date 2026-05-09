@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+
+:root {
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --navy: #143D60;
+  --teal: #27667B;
+  --lime: #DDEB9D;
+  --green: #A0C878;
+  --fog: #F9FAFB;
+  --ink: #0A1628;
+  --muted: #6B7A8D;
+  --border: rgba(20, 61, 96, 0.12);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--fog);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grain texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.022;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── Typography utilities ── */
+.font-serif   { font-family: var(--font-serif); }
+.font-mono-ui { font-family: var(--font-mono); }
+
+/* Section eyebrow label */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+/* Mono label — for prices, categories, tags */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ── Button system ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--lime);
+  border: 1.5px solid var(--lime);
+  padding: 0.875rem 1.75rem;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+  border-radius: 0;
+}
+.btn-primary:hover {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: transparent;
+  border: 1.5px solid var(--navy);
+  padding: 0.875rem 1.75rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 0;
+}
+.btn-outline:hover {
+  background: var(--navy);
+  color: var(--fog);
+}
+
+.btn-navy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fog);
+  background: var(--navy);
+  border: 1.5px solid var(--navy);
+  padding: 0.875rem 1.75rem;
+  text-decoration: none;
+  transition: background 0.2s;
+  border-radius: 0;
+}
+.btn-navy:hover { background: var(--teal); border-color: var(--teal); }
+
+/* ── Card system ── */
+.card {
+  background: white;
+  border: 0.5px solid var(--border);
+  border-radius: 0;
+}
+
+.card-hover {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 12px 40px rgba(20, 61, 96, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ── Grid divider system ── */
+/* Use these for flush-edge section grids (no gap, border-separated) */
+.grid-divided {
+  border: 0.5px solid var(--border);
+}
+.grid-divided > * {
+  border-right: 0.5px solid var(--border);
+  border-bottom: 0.5px solid var(--border);
+}
+
+/* ── Nav link with underline draw ── */
+.nav-link {
+  position: relative;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 100%;
+  height: 1px;
+  background: var(--navy);
+  transition: right 0.3s ease;
+}
+.nav-link:hover { color: var(--navy); }
+.nav-link:hover::after,
+.nav-link.active::after { right: 0; }
+.nav-link.active { color: var(--navy); font-weight: 600; }
+
+/* ── Section header ── */
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 1.5rem;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 3rem;
+}
+
+/* ── Scroll reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+
+/* ── Tailwind overrides for our design system ── */
+/* Square corners everywhere — override Tailwind's rounded-* */
+.rounded-xl,
+.rounded-2xl,
+.rounded-lg,
+.rounded-full {
+  border-radius: 0 !important;
+}
+
+/* Re-allow pill shapes only where explicitly needed */
+.pill { border-radius: 999px !important; }
+
+/* Status badge base */
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid;
+}
+
+/* Input / textarea refinement */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="url"],
+textarea,
+select {
+  border-radius: 0 !important;
+  font-family: var(--font-sans);
+}
+
+/* Focus ring */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(20, 61, 96, 0.2);
+}
