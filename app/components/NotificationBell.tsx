@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-// import { NOTIFICATION_ICONS, NOTIFICATION_COLORS } from "@/lib/notifications";
+import { NOTIFICATION_ICONS, NOTIFICATION_COLORS } from "@/lib/notifications";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
