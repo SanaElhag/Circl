@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { LAST_UPDATED, COMPANY_NAME, CONTACT_EMAIL, PREAMBLE, sections } from "./content";
-type S = Record<string, any>;
 
 export default function TermsPage() {
   return (
@@ -27,7 +26,7 @@ export default function TermsPage() {
             <div className="sticky top-28 rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
               <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-4">Contents</p>
               <nav className="space-y-1">
-                {sections.map((s) => (
+                {sections.map((s: Record<string, string>) => (
                   <a key={s.id} href={`#${s.id}`}
                     className="block text-xs text-gray-500 hover:text-[#143D60] py-1 transition-colors duration-200 leading-snug">
                     {s.title}
@@ -47,7 +46,8 @@ export default function TermsPage() {
               </p>
             </div>
 
-            {sections.map((s) => (
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {sections.map((s: Record<string, any>) => (
               <div key={s.id} id={s.id} className="scroll-mt-28">
                 <h2 className="text-lg font-bold text-[#143D60] mb-4 pb-3 border-b border-gray-100">
                   {s.title}
@@ -56,23 +56,24 @@ export default function TermsPage() {
 
                   {"intro" in s && s.intro && <p>{s.intro}</p>}
 
-                  {"paragraphs" in s && s.paragraphs?.map((p, i) => <p key={i}>{p}</p>)}
+                  {"paragraphs" in s && s.paragraphs?.map((p: string, i: number) => <p key={i}>{p}</p>)}
 
                   {"items" in s && s.items && (
                     <ul className="space-y-1.5 pl-5">
-                      {s.items.map((item, i) => (
+                      {s.items.map((item: string, i: number) => (
                         <li key={i} className="list-disc text-gray-600">{item}</li>
                       ))}
                     </ul>
                   )}
 
-                  {"subsections" in s && s.subsections?.map((sub, i) => (
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {"subsections" in s && s.subsections?.map((sub: Record<string, any>, i: number) => (
                     <div key={i}>
                       <p className="font-semibold text-[#143D60]">{sub.heading}</p>
                       {"body" in sub && sub.body && <p>{sub.body}</p>}
                       {"items" in sub && sub.items && (
                         <ul className="space-y-1.5 pl-5 mt-1">
-                          {sub.items.map((item, j) => (
+                          {sub.items.map((item: string, j: number) => (
                             <li key={j} className="list-disc text-gray-600">{item}</li>
                           ))}
                         </ul>

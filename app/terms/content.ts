@@ -4,7 +4,8 @@ export const CONTACT_EMAIL = "legal@circl.ca";
 
 export const PREAMBLE = `Please read these Terms carefully before using ${COMPANY_NAME}. These Terms govern your use of our peer-to-peer outdoor gear rental marketplace. By creating an account or using the Platform, you agree to be bound by these Terms.`;
 
-export const sections = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const sections: any[] = [
   {
     id: "acceptance",
     title: "1. Acceptance of Terms",
@@ -174,5 +175,4 @@ export const sections = [
       email: CONTACT_EMAIL,
     },
   },
-] satisfies object[];
-;
+];
