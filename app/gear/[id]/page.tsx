@@ -132,7 +132,7 @@ export default async function GearDetailPage({
             {/* ── 2 + 3. Photos — cover image + optional thumbnail strip ── */}
             <PhotoGallery
               photos={photos}
-              category={categoryLabel}
+              // category={categoryLabel}
               title={listing.title}
             />
 
