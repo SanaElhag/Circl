@@ -174,4 +174,5 @@ export const sections = [
       email: CONTACT_EMAIL,
     },
   },
-] as Record<string, unknown>[];
+] satisfies object[];
+;

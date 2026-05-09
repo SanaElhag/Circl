@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LAST_UPDATED, COMPANY_NAME, CONTACT_EMAIL, PREAMBLE, sections } from "./content";
+type S = Record<string, any>;
 
 export default function TermsPage() {
   return (
