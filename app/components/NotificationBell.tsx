@@ -114,10 +114,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
   }
 
   // Initial load
-  useEffect(() => {
-    loadNotifications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  // useEffect(() => {
+  //   loadNotifications();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [userId]);
 
   // ── Realtime ───────────────────────────────────────────────────────────────
 
