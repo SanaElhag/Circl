@@ -16,7 +16,7 @@ export const PROBLEM = {
   eyebrow: "Why Circl exists",
   heading: "Great gear shouldn't sit unused while other people go without.",
   paragraphs: [
-    "BC is one of the best places in the world for outdoor adventure. Skiing in Whistler, hiking the Rockies, kayaking the Fraser — it's all right here. And UFV sits in the middle of it.",
+    "a7la laila a7la nas BC is one of the best places in the world for outdoor adventure. Skiing in Whistler, hiking the Rockies, kayaking the Fraser — it's all right here. And UFV sits in the middle of it.",
     "But outdoor gear is expensive. A decent ski setup costs $800. A trail tent, another $400. For most students, that's weeks of groceries. So the mountains stay at a distance.",
     "Meanwhile, walk through any UFV parking lot in January and you'll see ski bags gathering dust in the back of cars. Gear that got used twice and now lives in a closet.",
     "The gear and the people who need it are in the same building. They just don't have a way to find each other. That's what Circl fixes.",
