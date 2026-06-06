@@ -8,7 +8,9 @@ export const HERO = {
   eyebrow: "Our story",
   heading: "We built what we needed.",
   subheading:
-    "Circl started because a group of UFV students wanted to ski but couldn't justify the price tag. Turns out, half the campus had the same problem — and the other half had gear sitting in storage.",
+  [
+    "We're Alaa and Sana — dormmates turned founders. We met at UFV, bonded over the outdoors, and built the community we were looking for. BC is extraordinary. It should be accessible to everyone who calls it home.!​",
+    ]
 };
 
 // ── Problem section ───────────────────────────────────────────────────────────
@@ -91,6 +93,12 @@ export const team = [
     name: "Sana",
     role: "Co-founder & Tech",
     bio: "CIS Student.",
+  },
+  {
+    initial: "C",
+    name: "Chang",
+    role: "Advisor",
+    bio: "Business Prof.",
   },
 ];
 

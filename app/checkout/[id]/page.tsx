@@ -44,16 +44,19 @@ function CheckoutContent() {
 
       const { data, error: fetchErr } = await supabase
         .from("listings")
-        .select(`id, title, category, price_per_day, image_url, condition, user_id,
-                 users!listings_user_id_fkey ( id, full_name )`)
+        .select("id, title, category, price_per_day, image_url, condition, user_id")
         .eq("id", listingId)
         .single();
 
       if (fetchErr || !data) {
         setError("Gear listing not found.");
       } else {
-        const raw = data as Listing & { users: { id: string; full_name: string } | { id: string; full_name: string }[] };
-        setListing({ ...raw, users: Array.isArray(raw.users) ? raw.users[0] : raw.users });
+        const { data: ownerData } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .eq("id", data.user_id)
+          .single();
+        setListing({ ...data, users: ownerData ?? null });
       }
       setLoading(false);
     }

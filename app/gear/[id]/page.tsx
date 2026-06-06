@@ -18,17 +18,6 @@ const CONDITION_COLORS: Record<string, string> = {
   Worn:       "bg-gray-100 text-gray-700",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  skiing:        "Skiing",
-  snowboarding:  "Snowboarding",
-  hiking:        "Hiking",
-  camping:       "Camping",
-  climbing:      "Climbing",
-  "water-sports":"Water Sports",
-  cycling:       "Cycling",
-  fishing:       "Fishing",
-};
-
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-CA", {
     month: "short", day: "numeric", year: "numeric",
@@ -44,21 +33,27 @@ export default async function GearDetailPage({
 
   const { data: listing, error } = await supabase
     .from("listings")
-    .select(`*, users(full_name, email), listing_images(id, url, position)`)
+    .select("*")
     .eq("id", id)
     .single();
 
   if (error || !listing) notFound();
 
-  const owner = listing.users as { full_name: string; email: string };
-  const ownerInitial = owner?.full_name?.[0]?.toUpperCase() ?? "?";
+  const [{ data: ownerData }, { data: categoryData }, { data: listingImages }] = await Promise.all([
+    supabase.from("users").select("full_name, email").eq("id", listing.user_id).single(),
+    supabase.from("categories").select("name").eq("slug", listing.category).single(),
+    supabase.from("listings_images").select("id, url, position").eq("listing_id", id).order("position"),
+  ]);
+
+  const owner = ownerData as { full_name: string; email: string } | null;
+  const ownerInitial = owner?.full_name?.[0]?.toUpperCase() ?? "C";
   const conditionClass = CONDITION_COLORS[listing.condition] ?? "bg-gray-100 text-gray-700";
   const rating: number | null = listing.rating ?? null;
-  const categoryLabel = CATEGORY_LABELS[listing.category] ?? listing.category;
+  const categoryLabel = (categoryData as { name: string } | null)?.name ?? listing.category;
 
-  // Sort listing_images by position; fall back to image_url if none
+  // Sort listings_images by position; fall back to image_url if none
   const extraImages: { id: string; url: string; position: number }[] =
-    (listing.listing_images ?? []).sort(
+    (listingImages ?? []).sort(
       (a: { position: number }, b: { position: number }) => a.position - b.position
     );
   const photos = extraImages.length > 0
@@ -132,7 +127,6 @@ export default async function GearDetailPage({
             {/* ── 2 + 3. Photos — cover image + optional thumbnail strip ── */}
             <PhotoGallery
               photos={photos}
-              category={categoryLabel}
               title={listing.title}
             />
 

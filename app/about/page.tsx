@@ -14,17 +14,32 @@ export default function AboutPage() {
     <main className="min-h-screen bg-[#F9FAFB] text-[#143D60]">
 
       {/* Hero */}
-      <section className="relative h-[80vh] min-h-[560px] flex items-end">
-        <Image src={HERO_IMAGE} alt="BC mountains" fill className="object-cover object-center" priority />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#143D60] via-[#143D60]/40 to-transparent" />
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-20">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#DDEB9D] mb-5">{HERO.eyebrow}</p>
-            <h1 className="text-5xl md:text-7xl font-bold text-white leading-[1.05] tracking-tight">{HERO.heading}</h1>
-            <p className="mt-6 text-lg text-white/70 max-w-xl leading-relaxed">{HERO.subheading}</p>
-          </div>
-        </div>
-      </section>
+<section className="bg-[#F5F0E8]">
+  <div className="grid lg:grid-cols-[1fr_1.2fr] min-h-[85vh]">
+
+    {/* Left — text */}
+    <div className="flex flex-col justify-center px-12 xl:px-20 py-24">
+      <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#27667B] mb-6">{HERO.eyebrow}</p>
+      <h1 className="text-[clamp(40px,5vw,68px)] font-bold text-[#143D60] leading-[1.05] tracking-tight mb-7">{HERO.heading}</h1>
+      <p className="text-[17px] text-[#6B5E4E] max-w-md leading-relaxed mb-10">{HERO.subheading}</p>
+      <div className="flex gap-3 flex-wrap">
+        <Link href="/auth/register" className="rounded-full bg-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-white hover:bg-[#27667B] transition-colors duration-200">
+          Join Circl
+        </Link>
+        <Link href="/browse" className="rounded-full border border-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-[#143D60] hover:bg-[#143D60] hover:text-white transition-all duration-200">
+          Browse Gear
+        </Link>
+      </div>
+    </div>
+
+    {/* Right — image, full height */}
+    <div className="relative hidden lg:block">
+      <Image src={HERO_IMAGE} alt="BC mountains" fill className="object-cover object-center" priority />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/20 to-transparent" />
+    </div>
+
+  </div>
+</section>
 
       {/* Problem */}
       <section className="bg-white py-28">

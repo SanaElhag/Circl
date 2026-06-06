@@ -7,17 +7,6 @@ import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
 
-const categories = [
-  { label: "Skiing",        slug: "skiing" },
-  { label: "Snowboarding",  slug: "snowboarding" },
-  { label: "Hiking",        slug: "hiking" },
-  { label: "Camping",       slug: "camping" },
-  { label: "Climbing",      slug: "climbing" },
-  { label: "Water Sports",  slug: "water-sports" },
-  { label: "Cycling",       slug: "cycling" },
-  { label: "Fishing",       slug: "fishing" },
-];
-
 const communityLinks = [
   { label: "Latest Posts",   href: "/community" },
   { label: "Creator's Blog", href: "/community/blog" },
@@ -28,6 +17,16 @@ export default function TopNav() {
   const pathname = usePathname();
   const router   = useRouter();
 
+  const [categories, setCategories] = useState<{ label: string; slug: string }[]>([
+    { label: "Skiing",        slug: "skiing" },
+    { label: "Snowboarding",  slug: "snowboarding" },
+    { label: "Hiking",        slug: "hiking" },
+    { label: "Camping",       slug: "camping" },
+    { label: "Climbing",      slug: "climbing" },
+    { label: "Water Sports",  slug: "water-sports" },
+    { label: "Cycling",       slug: "cycling" },
+    { label: "Fishing",       slug: "fishing" },
+  ]);
   const [user,          setUser]          = useState<User | null | undefined>(undefined);
   const [scrolled,      setScrolled]      = useState(false);
   const [browseOpen,    setBrowseOpen]    = useState(false);
@@ -51,6 +50,19 @@ export default function TopNav() {
       (_event, session) => setUser(session?.user ?? null)
     );
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("is_active", true)
+      .order("position")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCategories(data.map((c) => ({ label: c.name, slug: c.slug })));
+        }
+      });
   }, []);
 
   // Scroll shrink

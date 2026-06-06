@@ -4,33 +4,39 @@ import { createClient } from "@supabase/supabase-js";
 import NewsletterForm from "./components/NewsletterForm";
 
 
-const HERO_IMAGE   = "/images/hero.jpg";       // Full-bleed hero background
-const TRUST_IMAGE  = "/images/trust.jpg";      // Right column of the "List with confidence" section
-const PLACEHOLDER_IMAGE = "/images/gear-placeholder.jpg"; // Fallback for listings without a photo
+const HERO_IMAGE   = "/images/hero.jpg";      
+const TRUST_IMAGE  = "/images/trust.jpg";     
+const PLACEHOLDER_IMAGE = "/images/gear-placeholder.jpg";
 
 const trustPoints = [
   {
     number: "01",
     title: "You choose who rents your gear",
-    body: "Every request shows you who's asking. Accept or decline — nothing moves without your say.",
+    body: "Every request shows you who's asking. Accept or decline: nothing moves without your say.",
   },
   {
     number: "02",
     title: "Verified UFV community only",
-    body: "Every person on Circl is a verified UFV student or staff member. Not a stranger — a neighbour.",
+    body: "Every person on Circl is a verified UFV alumni, student, or staff member. Not a stranger — a neighbour.",
   },
   {
     number: "03",
-    title: "Campus handoffs, always",
-    body: "All pickups and returns happen on UFV campus. Familiar ground, every time.",
+    title: "Plan Your Pickup",
+    body: "Set a time and a place that works for you.",
   },
   {
     number: "04",
     title: "Clear status at every step",
     body: "Pending, accepted, declined. You always know exactly where a request stands.",
   },
+  {
+    number: "05",
+    title: "See the bigger picture",
+    body: "Track your earnings, monitor your listings, and plan your next move all from your dashboard.",
+  },
 ];
 
+/*We should eventually get these from the db, not hard coded */
 const testimonials = [
   {
     quote: "I listed my snowboard during exams and someone rented it for a week. Easiest money I've made as a student.",
@@ -51,7 +57,7 @@ const testimonials = [
     initial: "P",
   },
 ];
-
+/*Add to db to categories table to be the same in all pages*/
 const conditionColors: Record<string, string> = {
   "New":       "bg-[#DDEB9D] text-[#143D60]",
   "Like new":  "bg-[#DDEB9D] text-[#143D60]",
@@ -107,37 +113,38 @@ export default async function HomePage() {
           <div className="max-w-2xl">
 
             {/* Eyebrow with rule */}
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-7 mb-5">
               <span className="block w-7 h-px bg-[#DDEB9D]" />
-              <span className="text-[11px] font-bold tracking-[0.3em] uppercase text-[#DDEB9D]">
-                UFV Students &amp; Staff
+              <span className="text-[12px] font-bold tracking-[0.3em] uppercase text-[#DDEB9D]">
+                launching Exclusively For UFV Community
               </span>
+              <span className="block w-7 h-px bg-[#DDEB9D]" />
             </div>
 
-            <h1 className="font-display text-[clamp(40px,6vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5">
-              <span className="text-white drop-shadow-lg">Skip the store.</span><br />
-              <em className="not-italic text-[#DDEB9D] drop-shadow-lg">Borrow from campus.</em>
+            <h1 className="font-display text-[clamp(60px,6vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5">
+              <span className="text-white drop-shadow-lg">Plan The Trip</span><br />
+              <em className="not-italic text-[#DDEB9D] drop-shadow-lg">We'll Handle The Rest</em>
             </h1>
 
-            <p className="text-[16px] font-medium text-white/90 leading-relaxed max-w-[440px] mb-8 drop-shadow">
-              Rent outdoor gear from people you can trust: your UFV community.
-              Skiing, hiking, camping and more, at prices that make sense for students.
+            <p className="text-[18px] font-medium text-white/90 leading-relaxed max-w-[580px] mb-8 drop-shadow">
+              Someone on campus already owns exactly what you need.  Skip the store, borrow from your community instead.
+              
             </p>
 
             <div className="flex gap-3 items-center flex-wrap">
               <Link
-                href="/auth/register"
-                className="rounded-full bg-[#DDEB9D] px-7 py-3.5 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200 shadow-lg"
+                href="/browse/"
+                className="rounded-full bg-[#DDEB9D] px-7 py-3.5 text-[15px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200 shadow-lg"
               >
-                Create free account
+                Browse Gear
               </Link>
               {/* looks kinda weird to me but idk lets see */}
-              {/* <Link 
+              <Link 
                 href="/browse"
-                className="text-[13px] font-semibold text-white hover:text-[#DDEB9D] transition-colors duration-200 flex items-center gap-1.5"
+                className="text-[15px] font-semibold text-white hover:text-[#DDEB9D] transition-colors duration-200 flex items-center gap-1.5"
               >
-                Browse gear →
-              </Link> */}
+                Create an Account →
+              </Link>
             </div>
           </div>
         </div>
@@ -150,13 +157,13 @@ export default async function HomePage() {
       </section>
 
       
-     {/* ── STATS STRIP - Make these rel numbers from the db when we have users, bas if the numbers are small balash  */}
+     {/* ── STATS STRIP - Make these real numbers from the db when we have users, bas if the numbers are small balash  */}
       {/* <div className="bg-[#FAF7F2] border-b border-[#D4C9B0]">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#D4C9B0]">
             {[
-              { value: "200+", label: "Verified members" },
-              { value: "50+",  label: "Active listings" },
+              { value: "55+", label: "Verified members" },
+              { value: "10+",  label: "Active listings" },
               { value: "100%", label: "UFV verified" },
               { value: "Free", label: "To join" },
             ].map((stat) => (
@@ -175,24 +182,24 @@ export default async function HomePage() {
 
       {/* ── FEATURED TODAY - no need to edit this comes from db */}
       <section className="bg-[#F5F0E8] py-24">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+        <div className="mx-auto max-w-7xl px-7 sm:px-8">
 
-          <div className="flex items-end justify-between gap-4 mb-14">
+          <div className="flex items-end justify-between gap-6 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">Just listed</span>
                 <span className="block w-8 h-px bg-[#27667B]" />
               </div>
-              <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
-                Featured <em className="not-italic text-[#27667B]">today</em>
-              </h2>
-              <p className="mt-2 text-[13px] text-[#6B5E4E]">
+              <h1 className="font-display text-[40px] font-bold tracking-tight text-[#143D60] leading-tight">
+                Gear for this <em className="not-italic text-[#27667B]">Season</em>
+              </h1>
+              <p className="mt-2 text-[17px] text-[#6B5E4E]">
                 {featured.length > 0 ? "Fresh gear from your UFV community." : "Be the first to list your gear."}
               </p>
             </div>
             <Link
               href="/browse"
-              className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200 shrink-0 pb-1"
+              className="hidden sm:flex items-center gap-1.5 text-[17px] font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200 shrink-0 pb-1"
             >
               View all listings →
             </Link>
@@ -249,7 +256,7 @@ export default async function HomePage() {
                         href={`/gear/${item.id}`}
                         className="text-[11px] font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200"
                       >
-                        Request dates →
+                        Learn more
                       </Link>
                     </div>
                   </div>
@@ -260,147 +267,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── PROMO BANNER - we can edit this now, eventually we'll add to the db and have the admin/mod edit it without access to the code */}
-      <section className="bg-[#1C3D2A] py-20">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#DDEB9D]/70">New member offer</span>
-                <span className="block w-6 h-px bg-[#DDEB9D]/50" />
-              </div>
-              <h2 className="font-display text-[32px] md:text-[38px] font-bold text-white leading-[1.12] tracking-tight">
-                15% off your <em className="not-italic text-[#DDEB9D]">first</em> rental.
-              </h2>
-              <p className="mt-4 text-white/50 text-[14px] leading-relaxed max-w-sm">
-                Create your account today and your first rental is automatically
-                discounted. No code needed, no fine print.
-              </p>
-            </div>
-            <div className="shrink-0">
-              <Link
-                href="/auth/register"
-                className="inline-flex items-center gap-2 rounded-full bg-[#DDEB9D] px-8 py-4 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
-              >
-                Claim your discount →
-              </Link>
-              <p className="mt-3 text-[11px] text-white/25 text-center">Available to new accounts only</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── TRUST - this is just the laout, edit content on top*/}
-      <section className="bg-[#FAF7F2] py-24">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
-          <div className="grid lg:grid-cols-2 gap-20 items-start">
-
-            {/* Left — trust points */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">For gear owners</span>
-                <span className="block w-8 h-px bg-[#27667B]" />
-              </div>
-              <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight mb-12">
-                List with <em className="not-italic text-[#27667B]">confidence.</em>
-              </h2>
-
-              <div className="flex flex-col gap-10">
-                {trustPoints.map((point) => (
-                  <div key={point.number} className="flex gap-6">
-                    <span className="font-display text-[22px] font-bold text-[#D4C9B0] shrink-0 min-w-[28px] pt-0.5">
-                      {point.number}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-[14px] text-[#143D60] mb-2 leading-snug">{point.title}</p>
-                      <p className="text-[13px] text-[#6B5E4E] leading-relaxed">{point.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href="/become-owner"
-                className="inline-flex items-center gap-2 mt-12 rounded-full border border-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-[#143D60] hover:bg-[#143D60] hover:text-white transition-all duration-200"
-              >
-                Start listing your gear →
-              </Link>
-            </div>
-
-            {/* Right — image card with stats */}
-            <div className="relative h-[520px] rounded-2xl overflow-hidden shadow-xl">
-              <Image src={TRUST_IMAGE} alt="Outdoor adventure in BC" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#071a2c]/85 via-[#071a2c]/30 to-transparent" />
-
-              {/* Stats overlay at bottom -- we can remove these for now cause it's a lie lol */}
-              {/* <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {[
-                    { value: "200+", label: "Members" },
-                    { value: "50+",  label: "Listings" },
-                    { value: "100%", label: "Verified" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <p className="font-display text-[26px] font-bold text-white leading-none">{stat.value}</p>
-                      <p className="text-[9px] tracking-[0.2em] uppercase text-white/45 mt-1">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-white/10 pt-5">
-                  <p className="text-[13px] text-white/60 leading-relaxed italic">
-                    &ldquo;I listed my snowboard during exams and someone rented it for a week. Easiest money I&apos;ve made as a student.&rdquo;
-                  </p>
-                  <p className="text-[11px] text-white/35 mt-2 font-medium not-italic">
-                    Sarah M. — Kinesiology, Year 3
-                  </p>
-                </div>
-              </div> */}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS - just layout edit content on top*/}
-      <section className="bg-[#F5F0E8] py-24">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
-
-          <div className="mb-14">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">From the community</span>
-              <span className="block w-8 h-px bg-[#27667B]" />
-            </div>
-            <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
-              Real stories <em className="not-italic text-[#27667B]">from UFV.</em>
-            </h2>
-            <p className="mt-2 text-[13px] text-[#6B5E4E]">Placeholder reviews — real ones on the way.</p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="bg-[#FAF7F2] border border-[#D4C9B0] rounded-2xl p-8 flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
-              >
-                {/* Large opening quote */}
-                <span className="font-display text-[52px] text-[#DDEB9D] leading-none mb-4 block select-none">&ldquo;</span>
-                <p className="text-[13px] text-[#6B5E4E] leading-[1.75] flex-1">{t.quote}</p>
-                <div className="mt-8 pt-5 border-t border-[#E8DFCE] flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#143D60] flex items-center justify-center text-[12px] font-bold text-[#DDEB9D] shrink-0">
-                    {t.initial}
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#143D60]">{t.name}</p>
-                    <p className="text-[11px] text-[#6B5E4E]">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS -- we can edit this here, but we should move this up eh? do we even need this? */}
       <section className="bg-[#FAF7F2] py-24" id="how">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
 
@@ -409,7 +275,7 @@ export default async function HomePage() {
               <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">Simple by design</span>
               <span className="block w-8 h-px bg-[#27667B]" />
             </div>
-            <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
+            <h2 className="font-display text-[40px] font-bold tracking-tight text-[#143D60] leading-tight">
               Three steps to your <em className="not-italic text-[#27667B]">next trip.</em>
             </h2>
           </div>
@@ -417,9 +283,9 @@ export default async function HomePage() {
           {/* Three-column bordered grid */}
           <div className="grid md:grid-cols-3 border border-[#D4C9B0] rounded-2xl overflow-hidden">
             {[
-              { step: "01", title: "Create your account", body: "Sign up with your UFV email. Takes under a minute. Students and staff only." },
-              { step: "02", title: "Find the gear you need", body: "Browse listings by category, price, and condition. When you find it, request your dates." },
-              { step: "03", title: "Pick up on campus", body: "Owner accepts your request. Meet on campus, pick up your gear, go on your adventure." },
+              { step: "01", title: "Create your account", body: "Sign up with your UFV email. Takes under a minute. UFV students, alumni, staff, and faculty only." },
+              { step: "02", title: "Find the gear you need", body: "Browse listings by category, price, and condition. Choose your dates, and send your request." },
+              { step: "03", title: "Plan your pickup", body: "Once accepted, chat with the owner, agree on a meeting spot, and pick up your gear." },
             ].map((s, i) => (
               <div key={s.step} className={`p-10 bg-[#FAF7F2] ${i < 2 ? "border-b md:border-b-0 md:border-r border-[#D4C9B0]" : ""}`}>
                 <p className="font-display text-[44px] font-bold text-[#E8DFCE] leading-none mb-5">{s.step}</p>
@@ -440,6 +306,149 @@ export default async function HomePage() {
         </div>
       </section>
 
+
+      {/* ── PROMO BANNER - we can edit this now, eventually we'll add to the db and have the admin/mod edit it without access to the code */}
+      <section className="bg-[#143D60] py-20">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-0">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-[12px] font-semibold tracking-[0.28em] uppercase text-[#DDEB9D]/70">Expand the Circle!</span>
+                <span className="block w-6 h-px bg-[#DDEB9D]/50" />
+              </div>
+              <h2 className="font-display text-[32px] md:text-[38px] font-bold text-white leading-[1.12] tracking-tight whitespace-nowrap">
+                Friends who borrow together, save together :) <br />
+                <em className="not-italic text-[#DDEB9D]"> Invite one, get $5 off.</em>
+              </h2>
+              {/* <p className="mt-4 text-white/50 text-[14px] leading-relaxed max-w-sm">
+                Create your account today and your first rental is automatically
+                discounted. No code needed, no fine print.
+              </p> */}
+            </div>
+            <div className="shrink-0">
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center gap-2 rounded-full bg-[#DDEB9D] px-10 py-4 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
+              >
+                Invite Code  →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TRUST - this is just the laout, edit content on top*/}
+      <section className="bg-[#FAF7F2] py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+          <div className="grid lg:grid-cols-2 gap-20 items-start">
+
+            {/* Left — trust points */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">For gear owners</span>
+                <span className="block w-8 h-px bg-[#27667B]" />
+              </div>
+              <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight mb-6">
+                List with <em className="not-italic text-[#27667B]">confidence.</em>
+              </h2>
+
+              <div className="flex flex-col gap-4">
+                {trustPoints.map((point) => (
+                  <div key={point.number} className="flex gap-6">
+                    <span className="font-display text-[25px] font-bold text-[#D4C9B0] shrink-0 min-w-[28px] pt-0.5">
+                      {point.number}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-[20px] text-[#143D60] mb-2 leading-snug">{point.title}</p>
+                      <p className="text-[15px] text-[#6B5E4E] leading-relaxed">{point.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href="/become-owner"
+                className="inline-flex items-center gap-2 mt-12 rounded-full border border-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-[#143D60] hover:bg-[#143D60] hover:text-white transition-all duration-200"
+              >
+                Start listing your gear →
+              </Link>
+            </div>
+
+            {/* Right — image card with stats */}
+            <div className="relative h-[520px] rounded-2xl overflow-hidden shadow-xl">
+              <Image src={TRUST_IMAGE} alt="Outdoor adventure in BC" fill className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#071a2c]/85 via-[#071a2c]/30 to-transparent" />
+
+              {/* Stats overlay at bottom -- we can remove these for now cause it's a lie lol */}
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  {[
+                    { value: "55", label: "Subscribers" },
+                    { value: "10+",  label: "Listings" },
+                    { value: "100%", label: "Verified" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-center">
+                      <p className="font-display text-[26px] font-bold text-white leading-none">{stat.value}</p>
+                      <p className="text-[9px] tracking-[0.2em] uppercase text-white/45 mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-white/10 pt-5">
+                  <p className="text-[13px] text-white/60 leading-relaxed italic">
+                    &ldquo;I listed my snowboard during exams and someone rented it for a week. Easiest money I&apos;ve made as a student.&rdquo;
+                  </p>
+                  <p className="text-[11px] text-white/35 mt-2 font-medium not-italic">
+                    Sarah M. — Kinesiology, Year 3
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS - just layout edit content on top*/}
+      {/* <section className="bg-[#F5F0E8] py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+
+          <div className="mb-14">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">From the community</span>
+              <span className="block w-8 h-px bg-[#27667B]" />
+            </div>
+            <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
+              Real stories <em className="not-italic text-[#27667B]">from UFV.</em>
+            </h2>
+            <p className="mt-2 text-[13px] text-[#6B5E4E]">Placeholder reviews — real ones on the way.</p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="bg-[#FAF7F2] border border-[#D4C9B0] rounded-2xl p-8 flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+              >
+      
+                <span className="font-display text-[52px] text-[#DDEB9D] leading-none mb-4 block select-none">&ldquo;</span>
+                <p className="text-[13px] text-[#6B5E4E] leading-[1.75] flex-1">{t.quote}</p>
+                <div className="mt-8 pt-5 border-t border-[#E8DFCE] flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-[#143D60] flex items-center justify-center text-[12px] font-bold text-[#DDEB9D] shrink-0">
+                    {t.initial}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#143D60]">{t.name}</p>
+                    <p className="text-[11px] text-[#6B5E4E]">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section> */}
+
+      {/* ── HOW IT WORKS -- we can edit this here, but we should move this up eh? do we even need this? */}
+      
       {/* ── NEWSLETTER ──────────────────────────────────────────── */}
       <section className="bg-[#143D60] py-20">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
@@ -448,7 +457,7 @@ export default async function HomePage() {
               Stay informed
             </p>
             <h2 className="font-display text-[30px] font-bold text-white tracking-tight mb-3">
-              Join the Circel.
+              Join the Circl.
             </h2>
             <p className="text-white/45 text-[14px] leading-relaxed mb-8">
               New listings, seasonal guides, and campus events,  straight to your inbox. No spam, ever.

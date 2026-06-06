@@ -69,10 +69,10 @@ export default function BookingCard({
     if (note.trim()) params.set("note", note.trim());
 
     if (!userId) {
-      router.push(`/auth/login?redirect=/checkout?${params.toString()}`);
+      router.push(`/auth/login?redirect=/checkout/${listingId}?${params.toString()}`);
       return;
     }
-    router.push(`/checkout?${params.toString()}`);
+    router.push(`/checkout/${listingId}?${params.toString()}`);
   }
 
   // Wait for auth to resolve before deciding — avoids flash of wrong state
