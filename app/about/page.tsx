@@ -19,6 +19,12 @@ export default function AboutPage() {
 
     {/* Left — text */}
     <div className="flex flex-col justify-center px-12 xl:px-20 py-24">
+      <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#6B5E4E] hover:text-[#143D60] transition-colors duration-200 mb-8">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Home
+      </Link>
       <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#27667B] mb-6">{HERO.eyebrow}</p>
       <h1 className="text-[clamp(40px,5vw,68px)] font-bold text-[#143D60] leading-[1.05] tracking-tight mb-7">{HERO.heading}</h1>
       <p className="text-[17px] text-[#6B5E4E] max-w-md leading-relaxed mb-10">{HERO.subheading}</p>

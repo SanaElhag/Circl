@@ -39,7 +39,7 @@ interface Conversation {
   lastMessage: string | null;
   lastMessageAt: string | null;
   lastSenderId: string | null;
-  unreadCount: number;
+  isUnread: boolean;
 }
 
 function initials(name: string) {
@@ -64,8 +64,6 @@ export default function MessagesPage() {
   const [filter,        setFilter]        = useState<"all" | "unread">("all");
 
   const fetchConversations = useCallback(async (uid: string) => {
-    // Fetch all requests the user is party to that have messages
-    // We get both sides: as requester and as owner
     const { data: requests } = await supabase
       .from("requests")
       .select(`
@@ -86,40 +84,43 @@ export default function MessagesPage() {
       return;
     }
 
-    // For each request, get the last message + unread count
+    // Single batch query for all messages across every request
+    const ids = requests.map((r) => r.id);
+    const { data: allMessages } = await supabase
+      .from("messages")
+      .select("request_id, content, created_at, sender_id")
+      .in("request_id", ids)
+      .order("created_at", { ascending: false });
+
+    // Keep only the latest message per request
+    const lastMsgMap = new Map<string, { content: string; created_at: string; sender_id: string }>();
+    for (const msg of allMessages ?? []) {
+      if (!lastMsgMap.has(msg.request_id)) {
+        lastMsgMap.set(msg.request_id, msg);
+      }
+    }
+
     const convos: Conversation[] = [];
 
     for (const req of requests) {
-      const listing = Array.isArray(req.listings) ? req.listings[0] : req.listings;
-      const requester = Array.isArray(req.users) ? req.users[0] : req.users;
-      const owner = Array.isArray(listing?.users) ? listing.users[0] : listing?.users;
+      const listing   = Array.isArray(req.listings)  ? req.listings[0]   : req.listings;
+      const requester = Array.isArray(req.users)      ? req.users[0]      : req.users;
+      const owner     = Array.isArray(listing?.users) ? listing.users[0]  : listing?.users;
 
       if (!listing || !requester || !owner) continue;
 
-      const isOwner = uid === owner.id;
+      const lastMsg = lastMsgMap.get(req.id);
+      if (!lastMsg) continue;
+
+      const isOwner    = uid === owner.id;
       const otherParty = isOwner ? requester : owner;
 
-      // Last message
-      const { data: lastMsgData } = await supabase
-        .from("messages")
-        .select("content, created_at, sender_id")
-        .eq("request_id", req.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      // Unread: messages sent by the other party after we last read
-      // Simple proxy: messages from other party we haven't read
-      // We'll track this via a messages_read table in the future;
-      // for now count messages from other party in last 24h as indicator
-      const { count: unread } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("request_id", req.id)
-        .eq("sender_id", otherParty.id)
-        .gt("created_at", new Date(Date.now() - 86400000 * 7).toISOString());
-
-      if (!lastMsgData) continue; // skip requests with no messages yet
+      // Unread: last message is from the other party and arrived after we last viewed this conversation
+      const lastSeen = typeof window !== "undefined"
+        ? localStorage.getItem(`msg_seen_${req.id}`)
+        : null;
+      const isUnread = lastMsg.sender_id !== uid &&
+        (!lastSeen || new Date(lastMsg.created_at) > new Date(lastSeen));
 
       convos.push({
         requestId:       req.id,
@@ -129,14 +130,13 @@ export default function MessagesPage() {
         listingImage:    listing.image_url,
         otherParty,
         status:          req.status,
-        lastMessage:     lastMsgData.content,
-        lastMessageAt:   lastMsgData.created_at,
-        lastSenderId:    lastMsgData.sender_id,
-        unreadCount:     unread ?? 0,
+        lastMessage:     lastMsg.content,
+        lastMessageAt:   lastMsg.created_at,
+        lastSenderId:    lastMsg.sender_id,
+        isUnread,
       });
     }
 
-    // Sort by most recent message
     convos.sort((a, b) =>
       new Date(b.lastMessageAt!).getTime() - new Date(a.lastMessageAt!).getTime()
     );
@@ -176,10 +176,10 @@ export default function MessagesPage() {
   }, [user, fetchConversations]);
 
   const filtered = filter === "unread"
-    ? conversations.filter((c) => c.unreadCount > 0)
+    ? conversations.filter((c) => c.isUnread)
     : conversations;
 
-  const totalUnread = conversations.reduce((s, c) => s + (c.unreadCount > 0 ? 1 : 0), 0);
+  const totalUnread = conversations.filter((c) => c.isUnread).length;
 
   if (loading) {
     return (
@@ -262,7 +262,7 @@ export default function MessagesPage() {
             {filtered.map((convo) => {
               const statusMeta = STATUS_META[convo.status] ?? { label: convo.status, color: "bg-gray-50 text-gray-400 border-gray-200" };
               const isMe = convo.lastSenderId === user?.id;
-              const hasUnread = convo.unreadCount > 0;
+              const hasUnread = convo.isUnread;
 
               return (
                 <Link

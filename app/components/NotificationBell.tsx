@@ -33,7 +33,11 @@ function timeAgo(dateStr: string) {
 
 // ── Toast popup ───────────────────────────────────────────────────────────────
 
-function NotifToast({ notif, onDismiss }: { notif: Notification; onDismiss: () => void }) {
+function NotifToast({ notif, onDismiss, onNavigate }: {
+  notif: Notification;
+  onDismiss: () => void;
+  onNavigate: () => void;
+}) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 4500);
     return () => clearTimeout(t);
@@ -49,13 +53,16 @@ function NotifToast({ notif, onDismiss }: { notif: Notification; onDismiss: () =
         animate-in slide-in-from-bottom-4 fade-in duration-300"
     >
       <div className="flex items-start gap-3 p-4">
-        <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0 ${color}`}>
+        <button
+          onClick={onNavigate}
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 ${color}`}
+        >
           {icon}
-        </span>
-        <div className="flex-1 min-w-0">
+        </button>
+        <button onClick={onNavigate} className="flex-1 min-w-0 text-left">
           <p className="text-sm font-bold text-[#143D60] leading-tight">{notif.title}</p>
           <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{notif.body}</p>
-        </div>
+        </button>
         <button
           onClick={onDismiss}
           className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0 -mt-0.5"
@@ -67,7 +74,7 @@ function NotifToast({ notif, onDismiss }: { notif: Notification; onDismiss: () =
       </div>
       {/* Progress bar */}
       <div className="h-0.5 bg-gray-100">
-        <div className="h-full bg-[#143D60] animate-[shrink_4.5s_linear_forwards]" style={{
+        <div className="h-full bg-[#143D60]" style={{
           animation: "shrink 4.5s linear forwards",
         }} />
       </div>
@@ -180,15 +187,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
     setMarkingAll(false);
   }
 
-  async function handleClick(notif: Notification) {
-    if (!notif.read) await markRead(notif.id);
+  function handleClick(notif: Notification) {
     setOpen(false);
-    if (notif.request_id) {
-      router.push(`/requests/${notif.request_id}`);
-    } else {
-      // No linked request — go to the full notifications page
-      router.push("/notifications");
-    }
+    if (!notif.read) markRead(notif.id);
+    router.push(notif.request_id ? `/requests/${notif.request_id}` : "/notifications");
   }
 
   const icon  = (n: Notification) => NOTIFICATION_ICONS[n.type] ?? "🔔";
@@ -295,6 +297,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
         <NotifToast
           notif={toast}
           onDismiss={() => setToast(null)}
+          onNavigate={() => {
+            setToast(null);
+            handleClick(toast);
+          }}
         />
       )}
     </>

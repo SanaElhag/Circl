@@ -17,11 +17,33 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
-const STATUS_STYLES: Record<string, string> = {
+const STATUS_BADGE: Record<string, string> = {
   pending:  "bg-yellow-50 text-yellow-700 border-yellow-200",
   accepted: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",
   declined: "bg-red-50 text-red-600 border-red-200",
 };
+
+// Left accent border by status — replaces the uniform gray border
+const STATUS_ACCENT: Record<string, string> = {
+  pending:  "border-l-4 border-l-yellow-300",
+  accepted: "border-l-4 border-l-[#A0C878]",
+  declined: "border-l-4 border-l-red-300",
+};
+
+const STATUS_ORDER: Record<string, number> = {
+  active: 0, accepted: 1, pending: 2,
+  completed: 3, closed: 4, cancelled: 5, declined: 6,
+};
+
+function sortByStatusThenDate<T extends { status: string; start_date?: string | null; created_at?: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const sd = (STATUS_ORDER[a.status] ?? 7) - (STATUS_ORDER[b.status] ?? 7);
+    if (sd !== 0) return sd;
+    const aDate = a.start_date ?? a.created_at ?? "";
+    const bDate = b.start_date ?? b.created_at ?? "";
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+}
 
 function diffDays(a: string, b: string) {
   return Math.max(1, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
@@ -65,12 +87,12 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
   onClose: () => void;
   onSubmit: (requestId: string) => void;
 }) {
-  const [gearRating,    setGearRating]    = useState(0);
-  const [ownerRating,   setOwnerRating]   = useState(0);
-  const [gearComment,   setGearComment]   = useState("");
-  const [ownerComment,  setOwnerComment]  = useState("");
-  const [saving,        setSaving]        = useState(false);
-  const [error,         setError]         = useState<string | null>(null);
+  const [gearRating,   setGearRating]   = useState(0);
+  const [ownerRating,  setOwnerRating]  = useState(0);
+  const [gearComment,  setGearComment]  = useState("");
+  const [ownerComment, setOwnerComment] = useState("");
+  const [saving,       setSaving]       = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
 
   const listing = request.listings;
   const owner   = unwrapUser(listing?.users ?? null);
@@ -102,7 +124,6 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
           <p className="text-sm text-gray-400 mt-0.5">{listing?.title}</p>
         </div>
 
-        {/* Gear rating + comment */}
         <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
           <p className="text-sm font-semibold text-[#143D60]">How was the gear?</p>
           <StarPicker value={gearRating} onChange={setGearRating} />
@@ -121,7 +142,6 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
           </div>
         </div>
 
-        {/* Owner rating + comment */}
         <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
           <p className="text-sm font-semibold text-[#143D60]">
             How was {owner?.full_name ?? "the owner"}?
@@ -190,13 +210,32 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
     setRatingFor(null);
   }
 
+  // Stat border helper for the unified card layout
+  function statBorder(i: number) {
+    if (i === 0) return "";
+    if (i === 1) return "border-l border-gray-100";
+    if (i === 2) return "border-t border-gray-100 lg:border-t-0 lg:border-l lg:border-gray-100";
+    return "border-t border-l border-gray-100 lg:border-t-0";
+  }
+
+  const STATS = [
+    { label: "Total Rentals",  value: String(accepted.length), note: "completed" },
+    { label: "Days Outside",   value: `${totalDays}`,          note: "days rented" },
+    { label: "Money Saved",    value: `$${moneySaved.toFixed(0)}`, note: "vs buying new" },
+    { label: "CO₂ Avoided",   value: `${co2Saved.toFixed(1)} kg`, note: "est. impact" },
+  ];
+
   return (
     <div>
-      {/* Full-width tabs */}
-      <div className="grid grid-cols-2 gap-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-1.5 mb-8">
+      {/* Underline tab nav */}
+      <div className="flex border-b border-gray-100 mb-8">
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${tab === key ? "bg-[#143D60] text-white shadow-sm" : "text-gray-400 hover:text-gray-600"}`}>
+            className={`px-1 pb-3 mr-7 text-sm font-semibold border-b-2 -mb-px transition-all duration-200 ${
+              tab === key
+                ? "border-[#143D60] text-[#143D60]"
+                : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200"
+            }`}>
             {label}
           </button>
         ))}
@@ -205,25 +244,21 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
       {/* ── Summary ── */}
       {tab === "summary" && (
         <div className="space-y-6">
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: "Total Rentals",  value: String(accepted.length), note: "completed" },
-              { label: "Days Outside",   value: `${totalDays}`, note: "days rented" },
-              { label: "Money Saved",    value: `$${moneySaved.toFixed(0)}`, note: "vs buying new" },
-              { label: "CO₂ Avoided",   value: `${co2Saved.toFixed(1)} kg`, note: "est. impact" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow duration-300">
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-3">{stat.label}</p>
-                <p className="text-3xl font-bold text-[#143D60] leading-none mb-1">{stat.value}</p>
-                <p className="text-xs text-gray-400">{stat.note}</p>
-              </div>
-            ))}
+          {/* Stats — unified card with internal dividers */}
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-2 lg:grid-cols-4">
+              {STATS.map((stat, i) => (
+                <div key={stat.label} className={`p-5 ${statBorder(i)}`}>
+                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-2">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#143D60] leading-none mb-0.5">{stat.value}</p>
+                  <p className="text-xs text-gray-400">{stat.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Impact banner */}
           <div className="rounded-2xl bg-[#143D60] text-white p-7 relative overflow-hidden">
-            {/* Decorative circle */}
             <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/5" />
             <div className="absolute -right-2 -bottom-10 w-24 h-24 rounded-full bg-[#DDEB9D]/10" />
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-white/50 mb-2 relative">Your impact</p>
@@ -239,7 +274,7 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
 
           {/* Unrated nudge */}
           {unrated.length > 0 && (
-            <div className="rounded-2xl border border-[#DDEB9D] bg-gradient-to-br from-[#FAFFF5] to-white p-5 flex items-center justify-between gap-4">
+            <div className="rounded-2xl border border-[#DDEB9D] bg-linear-to-br from-[#FAFFF5] to-white p-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-bold text-[#143D60]">
                   {unrated.length} rental{unrated.length > 1 ? "s" : ""} waiting for a rating
@@ -247,7 +282,7 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
                 <p className="text-xs text-gray-500 mt-0.5">Help the community by sharing your experience.</p>
               </div>
               <button onClick={() => setTab("history")}
-                className="flex-shrink-0 bg-[#DDEB9D] text-[#143D60] font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#A0C878] transition-colors duration-200">
+                className="shrink-0 bg-[#DDEB9D] text-[#143D60] font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#A0C878] transition-colors duration-200">
                 Rate now
               </button>
             </div>
@@ -273,31 +308,32 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
 
       {/* ── History ── */}
       {tab === "history" && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {requests.length === 0 && (
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-12 text-center">
               <p className="font-bold text-[#143D60] mb-1">No rental history</p>
-              <p className="text-sm text-gray-400 mb-5">Your requests will appear here once youve made them.</p>
+              <p className="text-sm text-gray-400 mb-5">Your requests will appear here once you&apos;ve made them.</p>
               <Link href="/browse" className="bg-[#143D60] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#27667B] transition-colors duration-200 text-sm">
                 Start browsing
               </Link>
             </div>
           )}
 
-          {requests.map((r) => {
+          {sortByStatusThenDate(requests).map((r) => {
             const listing = r.listings;
             const owner   = unwrapUser(listing?.users ?? null);
             const days    = r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : null;
             const total   = days && listing?.price_per_day ? days * listing.price_per_day : null;
             const canRate = r.status === "accepted" && !rated.has(r.id);
+            const accentClass = STATUS_ACCENT[r.status] ?? "border-l-4 border-l-gray-100";
 
             return (
-              <div key={r.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
+              <div key={r.id} className={`rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 ${accentClass}`}>
                 <div className="flex gap-4 p-5">
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                     {listing?.image_url
-                      ? <Image src={listing.image_url} alt={listing.title} fill className="object-cover" sizes="80px" />
-                      : <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />}
+                      ? <Image src={listing.image_url} alt={listing.title} fill className="object-cover" sizes="96px" />
+                      : <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-200" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -307,7 +343,7 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
                         </Link>
                         <p className="text-xs text-gray-400 mt-0.5">{CATEGORY_LABELS[listing?.category ?? ""] ?? listing?.category}</p>
                       </div>
-                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize flex-shrink-0 ${STATUS_STYLES[r.status] ?? "bg-gray-50 text-gray-500 border-gray-200"}`}>
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize shrink-0 ${STATUS_BADGE[r.status] ?? "bg-gray-50 text-gray-500 border-gray-200"}`}>
                         {r.status}
                       </span>
                     </div>

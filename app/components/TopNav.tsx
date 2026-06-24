@@ -178,14 +178,14 @@ export default function TopNav() {
                   pathname.startsWith("/become-owner") ? "text-[#143D60] font-semibold" : "text-gray-500 hover:text-[#143D60]"
                 }`}
               >
-                Become a Renter
+                Become an Owner
               </Link>
             ) : (
               <Link
                 href="/auth/login?redirect=/become-owner"
                 className="text-sm text-gray-500 hover:text-[#143D60] transition-colors duration-200"
               >
-                Become a Renter
+                Become an Owner
               </Link>
             )}
           </nav>
@@ -252,6 +252,15 @@ export default function TopNav() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                           </svg>
                           Dashboard
+                        </Link>
+
+                        <Link href="/messages"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:text-[#143D60] hover:bg-gray-50 transition-colors duration-200 border-b border-gray-50">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          Messages
                         </Link>
 
                         <Link href="/account-settings"
@@ -410,7 +419,8 @@ export default function TopNav() {
               <>
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}
                   className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">Dashboard</Link>
-
+                <Link href="/messages" onClick={() => setMobileOpen(false)}
+                  className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">Messages</Link>
               </>
             )}
             <div className="pt-4 flex flex-col gap-3">

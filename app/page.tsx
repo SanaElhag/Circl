@@ -123,7 +123,7 @@ export default async function HomePage() {
 
             <h1 className="font-display text-[clamp(60px,6vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5">
               <span className="text-white drop-shadow-lg">Plan The Trip</span><br />
-              <em className="not-italic text-[#DDEB9D] drop-shadow-lg">We'll Handle The Rest</em>
+              <em className="not-italic text-[#DDEB9D] drop-shadow-lg">We&apos;ll Handle The Rest</em>
             </h1>
 
             <p className="text-[18px] font-medium text-white/90 leading-relaxed max-w-[580px] mb-8 drop-shadow">
@@ -139,8 +139,8 @@ export default async function HomePage() {
                 Browse Gear
               </Link>
               {/* looks kinda weird to me but idk lets see */}
-              <Link 
-                href="/browse"
+              <Link
+                href="/auth/register"
                 className="text-[15px] font-semibold text-white hover:text-[#DDEB9D] transition-colors duration-200 flex items-center gap-1.5"
               >
                 Create an Account →

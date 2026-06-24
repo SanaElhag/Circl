@@ -162,6 +162,14 @@ export default function FaqPage() {
         <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#27667B] opacity-30 blur-3xl" />
         <div className="absolute -bottom-16 -left-16 w-[300px] h-[300px] rounded-full bg-[#A0C878] opacity-20 blur-3xl" />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-36 pb-24 text-center">
+          <div className="flex justify-start mb-8">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white transition-colors duration-200">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
           <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#DDEB9D] mb-6">Help centre</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-6">
             Frequently asked questions

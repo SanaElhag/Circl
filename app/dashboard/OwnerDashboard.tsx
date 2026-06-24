@@ -93,6 +93,12 @@ function RequestCard({ request, onStatusChange }: {
     declined: "bg-red-50 text-red-600 border-red-200",
   };
 
+  const STATUS_ACCENT: Record<string, string> = {
+    pending:  "border-l-4 border-l-yellow-300",
+    accepted: "border-l-4 border-l-[#A0C878]",
+    declined: "border-l-4 border-l-red-300",
+  };
+
   async function updateStatus(status: "accepted" | "declined") {
     setSaving(true);
     await supabase.from("requests")
@@ -102,22 +108,23 @@ function RequestCard({ request, onStatusChange }: {
     setSaving(false);
   }
 
+  const accentClass = STATUS_ACCENT[request.status] ?? "border-l-4 border-l-gray-100";
+
   return (
-    <div className={`rounded-2xl bg-white border shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 ${request.status === "pending" ? "border-yellow-200" : "border-gray-100"}`}>
+    <div className={`rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 ${accentClass}`}>
       <div className="p-5">
-        {/* Pending indicator strip */}
         {request.status === "pending" && (
           <div className="flex items-center gap-2 mb-4 bg-yellow-50 rounded-xl px-3 py-2">
-            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse shrink-0" />
             <p className="text-xs font-semibold text-yellow-700">Awaiting your response</p>
           </div>
         )}
 
         <div className="flex items-start gap-4">
-          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
             {listing?.image_url
               ? <Image src={listing.image_url} alt={listing.title ?? ""} fill className="object-cover" sizes="64px" />
-              : <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />}
+              : <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-200" />}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -134,14 +141,13 @@ function RequestCard({ request, onStatusChange }: {
                   <p className="text-xs font-bold text-[#27667B] mt-0.5">${earning.toFixed(2)} potential</p>
                 )}
               </div>
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize flex-shrink-0 ${STATUS_BADGE[request.status] ?? ""}`}>
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize shrink-0 ${STATUS_BADGE[request.status] ?? ""}`}>
                 {request.status}
               </span>
             </div>
 
-            {/* Requester */}
             <div className="flex items-center gap-2 mt-3">
-              <div className="w-7 h-7 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-[10px] flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-[10px] shrink-0">
                 {requester ? initials(requester.full_name) : "?"}
               </div>
               <div>
@@ -154,7 +160,6 @@ function RequestCard({ request, onStatusChange }: {
           </div>
         </div>
 
-        {/* Accept/decline controls */}
         {request.status === "pending" && (
           <div className="mt-4 space-y-3">
             <div>
@@ -180,7 +185,6 @@ function RequestCard({ request, onStatusChange }: {
           </div>
         )}
 
-        {/* Owner comment if set */}
         {request.owner_comment && request.status !== "pending" && (
           <div className="mt-3 bg-gray-50 rounded-xl px-3 py-2.5">
             <p className="text-[10px] text-gray-400 mb-0.5 font-semibold uppercase tracking-wider">Your message</p>
@@ -188,11 +192,13 @@ function RequestCard({ request, onStatusChange }: {
           </div>
         )}
 
-        {/* View full request page */}
-        <div className="mt-4">
+        <div className="mt-4 flex justify-end">
           <Link href={`/requests/${request.id}`}
-            className="block w-full text-center border border-[#143D60] text-[#143D60] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#143D60] hover:text-white transition-all duration-200">
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200">
             View full request
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
       </div>
@@ -216,7 +222,6 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
   const [requestList, setRequestList] = useState<OwnerRequest[]>(requests);
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
   const accepted        = requestList.filter((r) => r.status === "accepted");
   const pendingCount    = requestList.filter((r) => r.status === "pending").length;
   const activeListings  = listingList.filter((l) => l.available).length;
@@ -229,7 +234,6 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
     ? ownerRatings.reduce((s, r) => s + (r.owner_rating ?? 0), 0) / ownerRatings.length
     : null;
 
-  // ── Monthly chart ─────────────────────────────────────────────────────────
   const currentYear = new Date().getFullYear();
   const monthlyEarnings = Array(12).fill(0) as number[];
   for (const r of accepted) {
@@ -262,16 +266,35 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
     { key: "listings", label: "My Gear" },
   ];
 
+  // Stat border helper for the unified card layout
+  function statBorder(i: number) {
+    if (i === 0) return "";
+    if (i === 1) return "border-l border-gray-100";
+    if (i === 2) return "border-t border-gray-100 lg:border-t-0 lg:border-l lg:border-gray-100";
+    return "border-t border-l border-gray-100 lg:border-t-0";
+  }
+
+  const STATS = [
+    { label: "Total Earnings",  value: `$${totalEarnings.toFixed(0)}`,                                        note: "from accepted rentals" },
+    { label: "Active Listings", value: String(activeListings),                                                  note: `of ${listingList.length} total` },
+    { label: "Potential/Day",   value: `$${potentialPerDay.toFixed(0)}`,                                       note: "if all rented" },
+    { label: "Owner Rating",    value: avgOwnerRating ? `${avgOwnerRating.toFixed(1)} / 5` : "—",             note: avgOwnerRating ? `${ownerRatings.length} review${ownerRatings.length !== 1 ? "s" : ""}` : "No ratings yet" },
+  ];
+
   return (
     <div>
-      {/* Full-width tabs */}
-      <div className="grid grid-cols-3 gap-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-1.5 mb-8">
+      {/* Underline tab nav */}
+      <div className="flex border-b border-gray-100 mb-8">
         {TABS.map(({ key, label, badge }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`relative py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${tab === key ? "bg-[#143D60] text-white shadow-sm" : "text-gray-400 hover:text-gray-600"}`}>
+            className={`relative px-1 pb-3 mr-7 text-sm font-semibold border-b-2 -mb-px transition-all duration-200 ${
+              tab === key
+                ? "border-[#143D60] text-[#143D60]"
+                : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200"
+            }`}>
             {label}
             {badge != null && badge > 0 && (
-              <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${tab === key ? "bg-[#DDEB9D] text-[#143D60]" : "bg-red-500 text-white"}`}>
+              <span className="ml-1.5 inline-flex items-center justify-center w-4.5 h-4.5 rounded-full bg-red-500 text-white text-[9px] font-bold">
                 {badge}
               </span>
             )}
@@ -281,10 +304,10 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
 
       {/* ── Requests tab ── */}
       {tab === "requests" && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {pendingCount > 0 && (
             <div className="rounded-2xl bg-yellow-50 border border-yellow-200 p-4 flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
               <p className="text-sm font-semibold text-yellow-800">
                 {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your response
               </p>
@@ -299,15 +322,18 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
                 </svg>
               </div>
               <p className="font-bold text-[#143D60] mb-1">No requests yet</p>
-              <p className="text-sm text-gray-400">When renters request your gear, theyll show up here.</p>
+              <p className="text-sm text-gray-400">When renters request your gear, they&apos;ll show up here.</p>
             </div>
           )}
 
           {[...requestList]
             .sort((a, b) => {
-              if (a.status === "pending" && b.status !== "pending") return -1;
-              if (b.status === "pending" && a.status !== "pending") return 1;
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              const ORDER: Record<string, number> = { active: 0, accepted: 1, pending: 2, completed: 3, closed: 4, cancelled: 5, declined: 6 };
+              const sd = (ORDER[a.status] ?? 7) - (ORDER[b.status] ?? 7);
+              if (sd !== 0) return sd;
+              const aDate = a.start_date ?? a.created_at ?? "";
+              const bDate = b.start_date ?? b.created_at ?? "";
+              return new Date(bDate).getTime() - new Date(aDate).getTime();
             })
             .map((r) => (
               <RequestCard key={r.id} request={r} onStatusChange={handleStatusChange} />
@@ -317,8 +343,8 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
 
       {/* ── My Gear / Listings tab ── */}
       {tab === "listings" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-1">
             <div>
               <p className="text-sm text-gray-500">
                 {listingList.length} listing{listingList.length !== 1 ? "s" : ""}
@@ -353,10 +379,10 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
           {listingList.map((l) => (
             <div key={l.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
               <div className="flex gap-4 p-5">
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                   {l.image_url
                     ? <Image src={l.image_url} alt={l.title} fill className="object-cover" sizes="80px" />
-                    : <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />}
+                    : <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-200" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
@@ -370,15 +396,17 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
                       <p className="text-sm font-bold text-[#143D60] mt-1">${l.price_per_day}/day</p>
                     </div>
                     {/* Availability toggle */}
-                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                      <button onClick={() => toggleAvailable(l.id, l.available)}
-                        className={`relative inline-flex h-6 w-11 rounded-full border-2 border-transparent transition-colors duration-200 ${l.available ? "bg-[#A0C878]" : "bg-gray-200"}`}>
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${l.available ? "translate-x-5" : "translate-x-0"}`} />
-                      </button>
-                      <span className={`text-[10px] font-semibold ${l.available ? "text-[#27667B]" : "text-gray-400"}`}>
-                        {l.available ? "Live" : "Off"}
-                      </span>
-                    </div>
+                    <button
+                      onClick={() => toggleAvailable(l.id, l.available)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shrink-0 ${
+                        l.available
+                          ? "bg-[#F0F7F4] border-[#A0C878] text-[#27667B] hover:bg-red-50 hover:border-red-200 hover:text-red-500"
+                          : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-[#F0F7F4] hover:border-[#A0C878] hover:text-[#27667B]"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${l.available ? "bg-[#27667B]" : "bg-gray-300"}`} />
+                      {l.available ? "Live" : "Paused"}
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-2 mt-3">
@@ -401,19 +429,17 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
       {/* ── Summary tab ── */}
       {tab === "summary" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: "Total Earnings",    value: `$${totalEarnings.toFixed(0)}`,                                              note: "from accepted rentals" },
-              { label: "Active Listings",   value: String(activeListings),                                                       note: `of ${listingList.length} total` },
-              { label: "Potential/Day",     value: `$${potentialPerDay.toFixed(0)}`,                                             note: "if all rented" },
-              { label: "Owner Rating",      value: avgOwnerRating ? `${avgOwnerRating.toFixed(1)} / 5` : "—",                   note: avgOwnerRating ? `${ownerRatings.length} review${ownerRatings.length !== 1 ? "s" : ""}` : "No ratings yet" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow duration-300">
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-3">{stat.label}</p>
-                <p className="text-3xl font-bold text-[#143D60] leading-none mb-1">{stat.value}</p>
-                <p className="text-xs text-gray-400">{stat.note}</p>
-              </div>
-            ))}
+          {/* Stats — unified card with internal dividers */}
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-2 lg:grid-cols-4">
+              {STATS.map((stat, i) => (
+                <div key={stat.label} className={`p-5 ${statBorder(i)}`}>
+                  <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-2">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#143D60] leading-none mb-0.5">{stat.value}</p>
+                  <p className="text-xs text-gray-400">{stat.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Earnings chart */}
@@ -436,7 +462,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
           {pendingCount > 0 && (
             <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
                 <div>
                   <p className="text-sm font-bold text-yellow-800">
                     {pendingCount} pending request{pendingCount > 1 ? "s" : ""}
@@ -445,7 +471,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
                 </div>
               </div>
               <button onClick={() => setTab("requests")}
-                className="flex-shrink-0 bg-[#143D60] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#27667B] transition-colors duration-200">
+                className="shrink-0 bg-[#143D60] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#27667B] transition-colors duration-200">
                 Review
               </button>
             </div>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { createNotification } from "@/lib/notifications";
 
 interface Listing {
   id: string;
@@ -27,6 +28,7 @@ function CheckoutContent() {
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [userFullName, setUserFullName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,13 @@ function CheckoutContent() {
         return;
       }
       setUser({ id: session.user.id, email: session.user.email ?? "" });
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", session.user.id)
+        .single();
+      setUserFullName(userData?.full_name ?? session.user.email ?? "Someone");
 
       if (!listingId) { setLoading(false); return; }
 
@@ -87,6 +96,14 @@ function CheckoutContent() {
     setError(null);
 
     try {
+      // Refresh session to ensure the JWT is current before the RLS-protected insert
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!freshSession) {
+        setSubmitting(false);
+        router.push(`/auth/login?redirect=/checkout/${listing.id}`);
+        return;
+      }
+
       const { data: req, error: reqErr } = await supabase
         .from("requests")
         .insert({
@@ -101,6 +118,17 @@ function CheckoutContent() {
         .single();
 
       if (reqErr || !req) throw new Error(reqErr?.message ?? "Failed to send request.");
+
+      // Notify the gear owner
+      if (listing.users) {
+        await createNotification({
+          userId: listing.users.id,
+          type: "request_received",
+          title: "New rental request",
+          body: `${userFullName} wants to rent "${listing.title}"`,
+          requestId: req.id,
+        });
+      }
 
       const payRef = `CRC-${req.id.slice(0, 8).toUpperCase()}`;
       router.push(
@@ -140,6 +168,19 @@ function CheckoutContent() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+
+        {/* Back button */}
+        <div className="lg:col-span-2 -mb-2">
+          <Link
+            href={`/gear/${listing.id}`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#143D60] transition-colors duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to gear
+          </Link>
+        </div>
 
         {/* LEFT */}
         <div className="space-y-6">

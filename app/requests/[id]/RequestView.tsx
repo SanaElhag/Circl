@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { createNotification } from "@/lib/notifications";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,6 +46,7 @@ interface Message {
   content: string;
   created_at: string;
   sender_id: string;
+  attachment_url?: string | null;
   users: { id: string; full_name: string } | { id: string; full_name: string }[];
 }
 
@@ -290,21 +292,34 @@ function EditRequestModal({ request, onSave, onClose }: {
 
 // ─── Message thread ───────────────────────────────────────────────────────────
 
-function MessageThread({ requestId, currentUserId, initialMessages }: {
+function isImageUrl(url: string) {
+  return /\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(url);
+}
+
+function MessageThread({ requestId, currentUserId, otherUserId, senderName, initialMessages }: {
   requestId: string;
   currentUserId: string;
+  otherUserId: string;
+  senderName: string;
   initialMessages: Message[];
 }) {
-  const [messages,  setMessages]  = useState<Message[]>(initialMessages);
-  const [text,      setText]      = useState("");
-  const [sending,   setSending]   = useState(false);
+  const [messages,       setMessages]       = useState<Message[]>(initialMessages);
+  const [text,           setText]           = useState("");
+  const [sending,        setSending]        = useState(false);
+  const [pendingFile,    setPendingFile]    = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef   = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Realtime subscription
+  useEffect(() => {
+    localStorage.setItem(`msg_seen_${requestId}`, new Date().toISOString());
+  }, [requestId, messages]);
+
+  // Realtime subscription — replace optimistic msg with real one to avoid duplicates
   useEffect(() => {
     const channel = supabase
       .channel(`messages:${requestId}`)
@@ -314,34 +329,94 @@ function MessageThread({ requestId, currentUserId, initialMessages }: {
         table: "messages",
         filter: `request_id=eq.${requestId}`,
       }, async (payload) => {
-        // Fetch full message with user info
         const { data } = await supabase
           .from("messages")
-          .select("id, content, created_at, sender_id, users!messages_sender_id_fkey ( id, full_name )")
+          .select("id, content, created_at, sender_id, attachment_url, users!messages_sender_id_fkey ( id, full_name )")
           .eq("id", payload.new.id)
           .single();
-        if (data) setMessages((prev) => [...prev, data as Message]);
+        if (!data) return;
+        setMessages((prev) => {
+          // If an optimistic message with same content+sender exists, replace it; otherwise append
+          const realMsg = data as Message;
+          const optIdx = prev.findIndex(
+            (m) => m.sender_id === realMsg.sender_id &&
+                   m.content === realMsg.content &&
+                   m.id !== realMsg.id
+          );
+          if (optIdx !== -1) {
+            const next = [...prev];
+            next[optIdx] = realMsg;
+            return next;
+          }
+          return [...prev, realMsg];
+        });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [requestId]);
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingFile(file);
+    setPendingPreview(URL.createObjectURL(file));
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function clearPending() {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+    setPendingFile(null);
+    setPendingPreview(null);
+  }
+
   async function sendMessage() {
-    if (!text.trim() || sending) return;
+    if ((!text.trim() && !pendingFile) || sending) return;
     setSending(true);
+
+    let attachmentUrl: string | null = null;
+    if (pendingFile) {
+      const ext  = pendingFile.name.split(".").pop();
+      const path = `messages/${currentUserId}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("gear-images").upload(path, pendingFile);
+      if (!upErr) {
+        const { data: { publicUrl } } = supabase.storage.from("gear-images").getPublicUrl(path);
+        attachmentUrl = publicUrl;
+      }
+      clearPending();
+    }
+
     const optimistic: Message = {
       id: crypto.randomUUID(),
       content: text.trim(),
       created_at: new Date().toISOString(),
       sender_id: currentUserId,
+      attachment_url: attachmentUrl,
       users: { id: currentUserId, full_name: "You" },
     };
     setMessages((prev) => [...prev, optimistic]);
     setText("");
-    await supabase.from("messages").insert({
+
+    const msgPayload: Record<string, unknown> = {
       request_id: requestId,
       sender_id: currentUserId,
       content: optimistic.content,
+    };
+    if (attachmentUrl) msgPayload.attachment_url = attachmentUrl;
+
+    const { error: msgErr } = await supabase.from("messages").insert(msgPayload);
+    if (msgErr) {
+      // Roll back optimistic message on failure
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setSending(false);
+      return;
+    }
+
+    await createNotification({
+      userId: otherUserId,
+      type: "new_message",
+      title: `New message from ${senderName}`,
+      body: optimistic.content.slice(0, 100) || "Sent an attachment",
+      requestId,
     });
     setSending(false);
   }
@@ -358,19 +433,44 @@ function MessageThread({ requestId, currentUserId, initialMessages }: {
           <p className="text-sm text-center text-gray-400 py-6">No messages yet. Start the conversation.</p>
         )}
         {messages.map((m) => {
-          const sender  = unwrap(m.users);
-          const isMe    = m.sender_id === currentUserId;
+          const sender = unwrap(m.users);
+          const isMe   = m.sender_id === currentUserId;
           return (
             <div key={m.id} className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : ""}`}>
-              <div className="w-7 h-7 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-[10px] flex-shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-[10px] shrink-0 mt-0.5">
                 {isMe ? "Me" : initials(sender?.full_name ?? "?")}
               </div>
-              <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
-                <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                  isMe ? "bg-[#143D60] text-white rounded-tr-sm" : "bg-gray-100 text-gray-700 rounded-tl-sm"
-                }`}>
-                  {m.content}
-                </div>
+              <div className={`max-w-[75%] flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}>
+                {m.attachment_url && isImageUrl(m.attachment_url) && (
+                  <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.attachment_url}
+                      alt="attachment"
+                      className="rounded-xl max-w-60 max-h-60 object-cover border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  </a>
+                )}
+                {m.attachment_url && !isImageUrl(m.attachment_url) && (
+                  <a
+                    href={m.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${isMe ? "bg-[#143D60] text-white" : "bg-gray-100 text-gray-700"} hover:opacity-80 transition-opacity`}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <span className="truncate max-w-45">{m.attachment_url.split("/").pop()?.split("?")[0] ?? "File"}</span>
+                  </a>
+                )}
+                {m.content && (
+                  <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+                    isMe ? "bg-[#143D60] text-white rounded-tr-sm" : "bg-gray-100 text-gray-700 rounded-tl-sm"
+                  }`}>
+                    {m.content}
+                  </div>
+                )}
                 <p className="text-[10px] text-gray-400 px-1">{fmtTime(m.created_at)}</p>
               </div>
             </div>
@@ -379,8 +479,37 @@ function MessageThread({ requestId, currentUserId, initialMessages }: {
         <div ref={bottomRef} />
       </div>
 
+      {/* Pending file preview */}
+      {pendingPreview && pendingFile && (
+        <div className="px-4 pt-3">
+          {isImageUrl(pendingFile.name) ? (
+            <div className="relative inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pendingPreview} alt="preview" className="h-16 w-16 rounded-lg object-cover border border-gray-200" />
+              <button onClick={clearPending} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-800 text-white rounded-full text-xs flex items-center justify-center leading-none">×</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 text-sm text-gray-700 w-fit">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+              <span className="truncate max-w-50">{pendingFile.name}</span>
+              <button onClick={clearPending} className="text-gray-400 hover:text-gray-700 ml-1">×</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Input */}
-      <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
+      <div className="px-4 py-3 border-t border-gray-100 flex gap-2 items-center">
+        <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx" className="hidden" onChange={handleFileChange} />
+        <button
+          onClick={() => fileRef.current?.click()}
+          title="Attach file"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#143D60] hover:bg-gray-100 transition-colors duration-200 shrink-0"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+        </button>
         <input
           type="text"
           placeholder="Type a message..."
@@ -389,8 +518,11 @@ function MessageThread({ requestId, currentUserId, initialMessages }: {
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }}}
           className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-sm outline-none border border-transparent focus:border-[#143D60] transition-colors duration-200 placeholder-gray-300"
         />
-        <button onClick={sendMessage} disabled={!text.trim() || sending}
-          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${text.trim() ? "bg-[#143D60] text-white hover:bg-[#27667B]" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+        <button
+          onClick={sendMessage}
+          disabled={(!text.trim() && !pendingFile) || sending}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${(text.trim() || pendingFile) ? "bg-[#143D60] text-white hover:bg-[#27667B]" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}
+        >
           Send
         </button>
       </div>
@@ -398,7 +530,7 @@ function MessageThread({ requestId, currentUserId, initialMessages }: {
   );
 }
 
-// ─── Price breakdown card ─────────────────────────────────────────────────────
+// ─── Price breakdown card (borrower view) ────────────────────────────────────
 
 function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: number }) {
   const subtotal    = pricePerDay * days;
@@ -433,18 +565,46 @@ function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: numb
   );
 }
 
+// ─── Earnings card (owner view) ───────────────────────────────────────────────
+
+function OwnerEarningsCard({ pricePerDay, days }: { pricePerDay: number; days: number }) {
+  const subtotal    = pricePerDay * days;
+  const platformFee = subtotal * PLATFORM_FEE;
+  const earnings    = subtotal - platformFee;
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-3">
+      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">Your Earnings</p>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm text-gray-500">
+          <span>${pricePerDay} × {days} day{days !== 1 ? "s" : ""}</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm text-gray-400">
+          <span>Platform fee (15%)</span>
+          <span>${platformFee.toFixed(2)}</span>
+        </div>
+        <div className="h-px bg-gray-100" />
+        <div className="flex justify-between items-baseline">
+          <span className="font-bold text-[#143D60]">You earn</span>
+          <span className="text-xl font-bold text-[#27667B]">${earnings.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function RequestView({
-  request: initialRequest,
-  initialMessages,
+  requestId,
 }: {
-  request: RawRequest;
-  initialMessages: Message[];
+  requestId: string;
 }) {
   const router = useRouter();
-  const [user,    setUser]    = useState<User | null | undefined>(undefined);
-  const [request, setRequest] = useState<RawRequest>(initialRequest);
+  const [user,             setUser]             = useState<User | null | undefined>(undefined);
+  const [request,          setRequest]          = useState<RawRequest | null>(null);
+  const [initialMessages,  setInitialMessages]  = useState<Message[]>([]);
   const [showReceivedModal, setShowReceivedModal] = useState(false);
   const [showEditModal,     setShowEditModal]     = useState(false);
   const [actionLoading,     setActionLoading]     = useState<string | null>(null);
@@ -452,13 +612,40 @@ export default function RequestView({
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push(`/auth/login?redirect=/requests/${request.id}`); return; }
+      if (!session) { router.push(`/auth/login?redirect=/requests/${requestId}`); return; }
       setUser(session.user);
+
+      const { data: requestData, error } = await supabase
+        .from("requests")
+        .select(`
+          id, status, start_date, end_date, created_at,
+          owner_comment, requester_note,
+          owner_delivered, requester_received, received_photos,
+          listings (
+            id, title, category, image_url, price_per_day,
+            available_from, available_until, condition,
+            users!listings_user_id_fkey ( id, full_name, email )
+          ),
+          users!requests_requester_id_fkey ( id, full_name, email )
+        `)
+        .eq("id", requestId)
+        .single();
+
+      if (error || !requestData) { router.push("/dashboard"); return; }
+      setRequest(requestData as RawRequest);
+
+      const { data: messagesData } = await supabase
+        .from("messages")
+        .select("id, content, created_at, sender_id, attachment_url, users!messages_sender_id_fkey ( id, full_name )")
+        .eq("request_id", requestId)
+        .order("created_at", { ascending: true });
+
+      setInitialMessages((messagesData as Message[]) ?? []);
     }
     init();
-  }, [router, request.id]);
+  }, [router, requestId]);
 
-  if (user === undefined) {
+  if (user === undefined || request === null) {
     return (
       <main className="min-h-screen bg-[#F9FAFB] pt-24 flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#143D60] border-t-transparent animate-spin" />
@@ -493,10 +680,10 @@ export default function RequestView({
     const { data } = await supabase
       .from("requests")
       .update({ status: newStatus })
-      .eq("id", request.id)
+      .eq("id", request!.id)
       .select()
       .single();
-    if (data) setRequest((prev) => ({ ...prev, status: newStatus }));
+    if (data) setRequest((prev) => ({ ...prev!, status: newStatus } as RawRequest));
     setActionLoading(null);
   }
 
@@ -505,8 +692,8 @@ export default function RequestView({
 
   async function handleOwnerDelivered() {
     setActionLoading("delivered");
-    await supabase.from("requests").update({ owner_delivered: true }).eq("id", request.id);
-    setRequest((prev) => ({ ...prev, owner_delivered: true }));
+    await supabase.from("requests").update({ owner_delivered: true }).eq("id", request!.id);
+    setRequest((prev) => ({ ...prev!, owner_delivered: true } as RawRequest));
     setActionLoading(null);
   }
 
@@ -525,13 +712,13 @@ export default function RequestView({
       requester_received: true,
       received_photos: uploadedUrls,
       status: "active",
-    }).eq("id", request.id);
+    }).eq("id", request!.id);
     setRequest((prev) => ({
-      ...prev,
+      ...prev!,
       requester_received: true,
       received_photos: uploadedUrls,
       status: "active",
-    }));
+    } as RawRequest));
     setShowReceivedModal(false);
   }
 
@@ -545,13 +732,13 @@ export default function RequestView({
       start_date: startDate || null,
       end_date: endDate || null,
       requester_note: note || null,
-    }).eq("id", request.id);
+    }).eq("id", request!.id);
     setRequest((prev) => ({
-      ...prev,
+      ...prev!,
       start_date: startDate || null,
       end_date: endDate || null,
       requester_note: note || null,
-    }));
+    } as RawRequest));
     setShowEditModal(false);
   }
 
@@ -563,12 +750,15 @@ export default function RequestView({
     <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href="/dashboard" className="hover:text-[#143D60] transition-colors duration-200">Dashboard</Link>
-          <span>/</span>
-          <span className="text-[#143D60] font-medium truncate max-w-[200px]">{listing?.title}</span>
-        </nav>
+        {/* Back button */}
+        <div className="mb-6">
+          <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#143D60] transition-colors duration-200">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+        </div>
 
         {/* Status header */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 mb-6">
@@ -579,7 +769,7 @@ export default function RequestView({
               </p>
               <h1 className="text-2xl font-bold tracking-tight text-[#143D60]">{listing?.title}</h1>
             </div>
-            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border flex-shrink-0 ${meta.color}`}>
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border shrink-0 ${meta.color}`}>
               {meta.label}
             </span>
           </div>
@@ -600,10 +790,10 @@ export default function RequestView({
             {/* Listing card */}
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex gap-4 p-5">
-                <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                   {listing?.image_url
                     ? <Image src={listing.image_url} alt={listing.title} fill className="object-cover" sizes="96px" />
-                    : <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />}
+                    : <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-200" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link href={`/gear/${listing?.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200">
@@ -639,7 +829,7 @@ export default function RequestView({
                 const person = isOwner ? requester : owner;
                 return person ? (
                   <Link href={`/profile/${person.id}`} className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-sm shrink-0">
                       {initials(person.full_name)}
                     </div>
                     <div>
@@ -681,6 +871,8 @@ export default function RequestView({
               <MessageThread
                 requestId={request.id}
                 currentUserId={user.id}
+                otherUserId={isOwner ? requester.id : owner.id}
+                senderName={isOwner ? owner.full_name : requester.full_name}
                 initialMessages={initialMessages}
               />
             )}
@@ -689,9 +881,11 @@ export default function RequestView({
           {/* RIGHT — actions + price */}
           <div className="space-y-4">
 
-            {/* Price breakdown */}
+            {/* Price breakdown / earnings */}
             {days > 0 && listing && (
-              <PriceBreakdown pricePerDay={listing.price_per_day} days={days} />
+              isOwner
+                ? <OwnerEarningsCard pricePerDay={listing.price_per_day} days={days} />
+                : <PriceBreakdown pricePerDay={listing.price_per_day} days={days} />
             )}
 
             {/* ── OWNER ACTIONS ── */}

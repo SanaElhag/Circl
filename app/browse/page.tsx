@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -59,7 +59,7 @@ function isAvailableForDates(listing: Listing, range: DateRange): boolean {
   return from <= range.from && until >= rangeEnd;
 }
 
-export default function BrowsePage() {
+function BrowseContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -290,7 +290,7 @@ useEffect(() => {
     <div className="min-h-screen bg-[#F9FAFB]">
 
       {/* ── SEARCH BAR ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-100 sticky top-20 z-30">
+      <div className="bg-white border-b border-gray-100 sticky top-14 z-30">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
 
@@ -554,7 +554,7 @@ useEffect(() => {
                     const availForDates = dateRange ? isAvailableForDates(item, dateRange) : true;
 
                     return (
-                      <div key={item.id}
+                      <Link key={item.id} href={`/gear/${item.id}`}
                         className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
 
                         <div className="relative aspect-[4/3] overflow-hidden">
@@ -581,10 +581,9 @@ useEffect(() => {
                             </div>
                           )}
                           <div className="absolute inset-0 bg-[#143D60]/0 group-hover:bg-[#143D60]/10 transition-colors duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
-                            <Link href={`/gear/${item.id}`}
-                              className="rounded-xl bg-[#143D60] px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-[#27667B] transition-colors duration-200">
+                            <span className="rounded-xl bg-[#143D60] px-5 py-2.5 text-xs font-bold text-white shadow-lg">
                               Request dates
-                            </Link>
+                            </span>
                           </div>
                         </div>
 
@@ -606,13 +605,12 @@ useEffect(() => {
                               ${item.price_per_day}
                               <span className="text-xs font-normal text-gray-400"> / day</span>
                             </span>
-                            <Link href={`/gear/${item.id}`}
-                              className="text-xs font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200">
+                            <span className="text-xs font-semibold text-[#27667B] group-hover:text-[#143D60] transition-colors duration-200">
                               View details →
-                            </Link>
+                            </span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -640,5 +638,13 @@ useEffect(() => {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F9FAFB]" />}>
+      <BrowseContent />
+    </Suspense>
   );
 }

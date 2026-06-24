@@ -247,6 +247,16 @@ export default function AccountSettingsPage() {
     <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
 
+        {/* Back button */}
+        <div className="mb-6">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#143D60] transition-colors duration-200">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
