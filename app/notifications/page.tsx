@@ -107,6 +107,7 @@ export default function NotificationsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line
     if (userId) fetchAll(userId);
   }, [userId, fetchAll]);
 
