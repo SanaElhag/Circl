@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LAST_UPDATED, COMPANY_NAME, CONTACT_EMAIL, PREAMBLE, sections } from "./content";
+import { LAST_UPDATED, CONTACT_EMAIL, PREAMBLE, sections } from "./content";
 
 export default function PrivacyPage() {
   return (

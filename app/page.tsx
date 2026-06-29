@@ -17,7 +17,7 @@ const trustPoints = [
   {
     number: "02",
     title: "Verified UFV community only",
-    body: "Every person on Circl is a verified UFV alumni, student, or staff member. Not a stranger — a neighbour.",
+    body: "Every person on Circl is a verified UFV alumni, student, or staff member. Not a stranger, a neighbour.",
   },
   {
     number: "03",
@@ -36,27 +36,6 @@ const trustPoints = [
   },
 ];
 
-/*We should eventually get these from the db, not hard coded */
-const testimonials = [
-  {
-    quote: "I listed my snowboard during exams and someone rented it for a week. Easiest money I've made as a student.",
-    name: "Sarah M.",
-    role: "Kinesiology, Year 3",
-    initial: "S",
-  },
-  {
-    quote: "Rented a full camping kit for the weekend. Everything was exactly as described. Way better than any gear store.",
-    name: "James T.",
-    role: "UFV Staff, Recreation",
-    initial: "J",
-  },
-  {
-    quote: "Knowing everyone is from UFV made it feel completely safe. Already rented gear three times this semester.",
-    name: "Priya K.",
-    role: "Environmental Science, Year 2",
-    initial: "P",
-  },
-];
 /*Add to db to categories table to be the same in all pages*/
 const conditionColors: Record<string, string> = {
   "New":       "bg-[#DDEB9D] text-[#143D60]",
