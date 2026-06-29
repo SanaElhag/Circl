@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import CommunityFeed from "./CommunityFeed";
 
@@ -44,6 +45,15 @@ export default async function CommunityPage() {
   return (
     <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
+
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#143D60] transition-colors duration-200">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+          </Link>
+        </div>
 
         <div className="mb-8">
           <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-2">

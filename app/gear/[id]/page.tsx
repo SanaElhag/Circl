@@ -18,17 +18,6 @@ const CONDITION_COLORS: Record<string, string> = {
   Worn:       "bg-gray-100 text-gray-700",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  skiing:        "Skiing",
-  snowboarding:  "Snowboarding",
-  hiking:        "Hiking",
-  camping:       "Camping",
-  climbing:      "Climbing",
-  "water-sports":"Water Sports",
-  cycling:       "Cycling",
-  fishing:       "Fishing",
-};
-
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-CA", {
     month: "short", day: "numeric", year: "numeric",
@@ -44,21 +33,27 @@ export default async function GearDetailPage({
 
   const { data: listing, error } = await supabase
     .from("listings")
-    .select(`*, users(full_name, email), listing_images(id, url, position)`)
+    .select("*")
     .eq("id", id)
     .single();
 
   if (error || !listing) notFound();
 
-  const owner = listing.users as { full_name: string; email: string };
-  const ownerInitial = owner?.full_name?.[0]?.toUpperCase() ?? "?";
+  const [{ data: ownerData }, { data: categoryData }, { data: listingImages }] = await Promise.all([
+    supabase.from("users").select("full_name, email").eq("id", listing.user_id).single(),
+    supabase.from("categories").select("name").eq("slug", listing.category).single(),
+    supabase.from("listings_images").select("id, url, position").eq("listing_id", id).order("position"),
+  ]);
+
+  const owner = ownerData as { full_name: string; email: string } | null;
+  const ownerInitial = owner?.full_name?.[0]?.toUpperCase() ?? "C";
   const conditionClass = CONDITION_COLORS[listing.condition] ?? "bg-gray-100 text-gray-700";
   const rating: number | null = listing.rating ?? null;
-  const categoryLabel = CATEGORY_LABELS[listing.category] ?? listing.category;
+  const categoryLabel = (categoryData as { name: string } | null)?.name ?? listing.category;
 
-  // Sort listing_images by position; fall back to image_url if none
+  // Sort listings_images by position; fall back to image_url if none
   const extraImages: { id: string; url: string; position: number }[] =
-    (listing.listing_images ?? []).sort(
+    (listingImages ?? []).sort(
       (a: { position: number }, b: { position: number }) => a.position - b.position
     );
   const photos = extraImages.length > 0
@@ -71,14 +66,15 @@ export default async function GearDetailPage({
     <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href="/" className="hover:text-[#143D60] transition-colors duration-200">Home</Link>
-          <span>/</span>
-          <Link href="/browse" className="hover:text-[#143D60] transition-colors duration-200">Browse</Link>
-          <span>/</span>
-          <span className="text-[#143D60] font-medium truncate max-w-[200px]">{listing.title}</span>
-        </nav>
+        {/* Back button */}
+        <div className="mb-6">
+          <Link href="/browse" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#143D60] transition-colors duration-200">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Browse
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
 
@@ -132,7 +128,6 @@ export default async function GearDetailPage({
             {/* ── 2 + 3. Photos — cover image + optional thumbnail strip ── */}
             <PhotoGallery
               photos={photos}
-              category={categoryLabel}
               title={listing.title}
             />
 

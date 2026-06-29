@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -13,17 +13,6 @@ const PLACEHOLDER_IMAGE =
 
 const PAGE_SIZE = 12;
 
-const CATEGORIES = [
-  { label: "All Gear",      slug: "" },
-  { label: "Skiing",        slug: "skiing" },
-  { label: "Snowboarding",  slug: "snowboarding" },
-  { label: "Hiking",        slug: "hiking" },
-  { label: "Camping",       slug: "camping" },
-  { label: "Climbing",      slug: "climbing" },
-  { label: "Water Sports",  slug: "water-sports" },
-  { label: "Cycling",       slug: "cycling" },
-  { label: "Fishing",       slug: "fishing" },
-];
 
 const CONDITIONS = ["New", "Like new", "Good", "Fair", "Worn"];
 
@@ -70,22 +59,34 @@ function isAvailableForDates(listing: Listing, range: DateRange): boolean {
   return from <= range.from && until >= rangeEnd;
 }
 
-export default function BrowsePage() {
+function BrowseContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const urlCategory = searchParams.get("category") ?? "";
+
+  const [categories, setCategories] = useState<{ label: string; slug: string }[]>([
+    { label: "All Gear",     slug: "" },
+    { label: "Skiing",       slug: "skiing" },
+    { label: "Snowboarding", slug: "snowboarding" },
+    { label: "Hiking",       slug: "hiking" },
+    { label: "Camping",      slug: "camping" },
+    { label: "Climbing",     slug: "climbing" },
+    { label: "Water Sports", slug: "water-sports" },
+    { label: "Cycling",      slug: "cycling" },
+    { label: "Fishing",      slug: "fishing" },
+  ]);
 
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Filters
-  const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [maxPrice, setMaxPrice] = useState(200);
   const [minPrice, setMinPrice] = useState(0);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -106,6 +107,29 @@ export default function BrowsePage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  useEffect(() => {
+    supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("is_active", true)
+      .order("position")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCategories([
+            { label: "All Gear", slug: "" },
+            ...data.map((c) => ({ label: c.name, slug: c.slug })),
+          ]);
+        }
+      });
+  }, []);
+
+
+// Waits 300ms after user stops typing before hitting Supabase
+useEffect(() => {
+  const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+  return () => clearTimeout(timer);
+}, [searchQuery]);
+
   // Main fetch effect — runs when any filter changes.
   // We define the async function inside and call it immediately.
   // This is the correct React 19 pattern — no useCallback, no setState
@@ -122,7 +146,7 @@ export default function BrowsePage() {
         .order("created_at", { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
-      if (selectedCategory) query = query.eq("category", selectedCategory);
+      if (urlCategory) query = query.eq("category", urlCategory);
       if (selectedConditions.length > 0) query = query.in("condition", selectedConditions);
       query = query.gte("price_per_day", minPrice).lte("price_per_day", maxPrice);
 
@@ -130,6 +154,12 @@ export default function BrowsePage() {
         const from_date = dateRange.from.toISOString().split("T")[0];
         const to_date = (dateRange.to ?? dateRange.from).toISOString().split("T")[0];
         query = query.lte("available_from", from_date).gte("available_until", to_date);
+      }
+
+      if (debouncedSearchQuery.trim()) {
+        query = query.or(
+          `title.ilike.%${debouncedSearchQuery}%,description.ilike.%${debouncedSearchQuery}%`
+        );
       }
 
       const { data, error } = await query;
@@ -145,7 +175,7 @@ export default function BrowsePage() {
     }
 
     fetchPage0();
-  }, [selectedCategory, selectedConditions, minPrice, maxPrice, dateRange]);
+  }, [urlCategory, selectedConditions, minPrice, maxPrice, dateRange, debouncedSearchQuery]);
 
   // Separate function for loading more pages (called by IntersectionObserver).
   // This is NOT inside a useEffect so it's safe to call setState inside it.
@@ -163,7 +193,7 @@ export default function BrowsePage() {
       .order("created_at", { ascending: false })
       .range(from, to);
 
-    if (selectedCategory) query = query.eq("category", selectedCategory);
+    if (urlCategory) query = query.eq("category", urlCategory);
     if (selectedConditions.length > 0) query = query.in("condition", selectedConditions);
     query = query.gte("price_per_day", minPrice).lte("price_per_day", maxPrice);
 
@@ -171,6 +201,12 @@ export default function BrowsePage() {
       const from_date = dateRange.from.toISOString().split("T")[0];
       const to_date = (dateRange.to ?? dateRange.from).toISOString().split("T")[0];
       query = query.lte("available_from", from_date).gte("available_until", to_date);
+    }
+
+    if (debouncedSearchQuery.trim()) {
+      query = query.or(
+        `title.ilike.%${debouncedSearchQuery}%,description.ilike.%${debouncedSearchQuery}%`
+      );
     }
 
     const { data, error } = await query;
@@ -208,9 +244,12 @@ export default function BrowsePage() {
   }, [hasMore, loadingMore, listings]);
 
   function handleCategoryChange(slug: string) {
-    setSelectedCategory(slug);
     const params = new URLSearchParams(searchParams.toString());
-    slug ? params.set("category", slug) : params.delete("category");
+    if (slug) {
+      params.set("category", slug);
+    } else {
+      params.delete("category");
+    }
     router.replace(`/browse?${params.toString()}`, { scroll: false });
   }
 
@@ -221,7 +260,6 @@ export default function BrowsePage() {
   }
 
   function clearFilters() {
-    setSelectedCategory("");
     setMinPrice(0);
     setMaxPrice(200);
     setSelectedConditions([]);
@@ -238,29 +276,21 @@ export default function BrowsePage() {
     return `${fmt(dateRange.from)} — ${fmt(dateRange.to)}`;
   }
 
-  const visibleListings = listings?.filter((item) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      item.title.toLowerCase().includes(q) ||
-      item.description?.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q)
-    );
-  }) ?? null;
+  const visibleListings = listings;
 
   const isLoading = visibleListings === null;
   const isEmpty = !isLoading && visibleListings.length === 0;
   const activeCategoryLabel =
-    CATEGORIES.find((c) => c.slug === selectedCategory)?.label ?? "All Gear";
+    categories.find((c) => c.slug === urlCategory)?.label ?? "All Gear";
   const hasActiveFilters =
-    selectedCategory || minPrice > 0 || maxPrice < 200 ||
+    urlCategory || minPrice > 0 || maxPrice < 200 ||
     selectedConditions.length > 0 || searchQuery || dateRange;
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
 
       {/* ── SEARCH BAR ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-100 sticky top-20 z-30">
+      <div className="bg-white border-b border-gray-100 sticky top-14 z-30">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
 
@@ -363,8 +393,8 @@ export default function BrowsePage() {
                 Categories
               </p>
               <div className="flex flex-col space-y-1">
-                {CATEGORIES.map((cat) => {
-                  const isActive = selectedCategory === cat.slug;
+                {categories.map((cat) => {
+                  const isActive = urlCategory === cat.slug;
                   return (
                     <button
                       key={cat.slug}
@@ -430,14 +460,14 @@ export default function BrowsePage() {
               <p className="text-xs text-gray-400 tracking-wide">
                 {isLoading
                   ? "Loading..."
-                  : `${visibleListings.length} listing${visibleListings.length !== 1 ? "s" : ""}${selectedCategory ? ` in ${activeCategoryLabel}` : ""}`
+                  : `${visibleListings.length} listing${visibleListings.length !== 1 ? "s" : ""}${urlCategory ? ` in ${activeCategoryLabel}` : ""}`
                 }
               </p>
               <div className="lg:hidden flex gap-2 overflow-x-auto pb-1">
-                {CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <button key={cat.slug} onClick={() => handleCategoryChange(cat.slug)}
                     className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition-colors duration-200 ${
-                      selectedCategory === cat.slug
+                      urlCategory === cat.slug
                         ? "bg-[#143D60] text-white border-[#143D60]"
                         : "bg-white text-gray-500 border-gray-200 hover:border-[#27667B] hover:text-[#27667B]"
                     }`}>
@@ -476,17 +506,17 @@ export default function BrowsePage() {
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-[#143D60] tracking-tight">
-                  {selectedCategory
+                  {urlCategory
                     ? `The ${activeCategoryLabel} Circl is just getting started.`
                     : "Nothing matched your search."}
                 </h2>
                 <p className="mt-3 text-sm text-gray-400 leading-relaxed">
-                  {selectedCategory
+                  {urlCategory
                     ? `No gear is listed in ${activeCategoryLabel} right now. You could be the first to earn by listing yours.`
                     : "Try adjusting your filters or search for something else."}
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                  {selectedCategory && (
+                  {urlCategory && (
                     <Link href="/post-gear"
                       className="rounded-xl bg-[#143D60] px-5 py-3 text-sm font-semibold text-white hover:bg-[#27667B] transition-colors duration-200">
                       List your gear
@@ -497,13 +527,13 @@ export default function BrowsePage() {
                     Clear all filters
                   </button>
                 </div>
-                {selectedCategory && (
+                {urlCategory && (
                   <div className="mt-12">
                     <p className="text-[10px] tracking-[0.2em] uppercase text-gray-300 mb-5">
                       Suggested for you
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
-                      {CATEGORIES.filter((c) => c.slug && c.slug !== selectedCategory).slice(0, 4).map((cat) => (
+                      {categories.filter((c) => c.slug && c.slug !== urlCategory).slice(0, 4).map((cat) => (
                         <button key={cat.slug} onClick={() => handleCategoryChange(cat.slug)}
                           className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:border-[#27667B] hover:text-[#27667B] transition-colors duration-200">
                           {cat.label}
@@ -524,7 +554,7 @@ export default function BrowsePage() {
                     const availForDates = dateRange ? isAvailableForDates(item, dateRange) : true;
 
                     return (
-                      <div key={item.id}
+                      <Link key={item.id} href={`/gear/${item.id}`}
                         className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
 
                         <div className="relative aspect-[4/3] overflow-hidden">
@@ -551,10 +581,9 @@ export default function BrowsePage() {
                             </div>
                           )}
                           <div className="absolute inset-0 bg-[#143D60]/0 group-hover:bg-[#143D60]/10 transition-colors duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
-                            <Link href={`/gear/${item.id}`}
-                              className="rounded-xl bg-[#143D60] px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-[#27667B] transition-colors duration-200">
+                            <span className="rounded-xl bg-[#143D60] px-5 py-2.5 text-xs font-bold text-white shadow-lg">
                               Request dates
-                            </Link>
+                            </span>
                           </div>
                         </div>
 
@@ -576,13 +605,12 @@ export default function BrowsePage() {
                               ${item.price_per_day}
                               <span className="text-xs font-normal text-gray-400"> / day</span>
                             </span>
-                            <Link href={`/gear/${item.id}`}
-                              className="text-xs font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200">
+                            <span className="text-xs font-semibold text-[#27667B] group-hover:text-[#143D60] transition-colors duration-200">
                               View details →
-                            </Link>
+                            </span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -610,5 +638,13 @@ export default function BrowsePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F9FAFB]" />}>
+      <BrowseContent />
+    </Suspense>
   );
 }

@@ -32,13 +32,13 @@ interface DashboardData {
 
 export default function DashboardShell() {
   const router = useRouter();
-  const [mode, setMode]   = useState<"borrower" | "owner">("borrower");
-  const [data, setData]   = useState<DashboardData | null>(null);
+  const [mode, setMode]       = useState<"borrower" | "owner">("borrower");
+  const [data, setData]       = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     async function load() {
-      // 1. Auth check
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         router.push("/auth/login?redirect=/dashboard");
@@ -46,7 +46,10 @@ export default function DashboardShell() {
       }
       const uid = session.user.id;
 
-      // 2. Fetch all data in parallel
+      // Extract first name for greeting
+      const fullName = session.user.user_metadata?.full_name as string | undefined;
+      if (fullName) setUserName(fullName.split(" ")[0]);
+
       const [
         { data: rawBorrower },
         { data: submittedRatings },
@@ -85,7 +88,6 @@ export default function DashboardShell() {
       const ownerListings: OwnerListing[] = listings ?? [];
       const listingIds = ownerListings.map((l) => l.id);
 
-      // 3. Fetch owner requests separately (needs listing IDs first)
       const { data: rawOwnerRequests } = listingIds.length > 0
         ? await supabase
             .from("requests")
@@ -99,7 +101,7 @@ export default function DashboardShell() {
         : { data: [] };
 
       setData({
-        userId:          uid,
+        userId:           uid,
         borrowerRequests: (rawBorrower ?? []).map((r) => normaliseBorrowerRequest(r as RawBorrowerRequest)),
         ratedRequestIds:  (submittedRatings ?? []).map((r: { request_id: string }) => r.request_id),
         listings:         ownerListings,
@@ -129,32 +131,40 @@ export default function DashboardShell() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-2">Your account</p>
-            <h1 className="text-4xl font-bold tracking-tight text-[#143D60]">Dashboard</h1>
-          </div>
+        <div className="mb-10">
+          <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-2">Your account</p>
+          <h1 className="text-4xl font-bold tracking-tight text-[#143D60]">
+            {userName ? `Hey, ${userName}.` : "Dashboard"}
+          </h1>
+        </div>
 
-          {/* Role toggle */}
-          <div className="mt-2 flex items-center bg-white border border-gray-100 rounded-xl shadow-sm p-1">
-            <button
-              onClick={() => setMode("borrower")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === "borrower" ? "bg-[#143D60] text-white" : "text-gray-400 hover:text-gray-600"}`}
-            >
-              Borrower
-            </button>
-            <button
-              onClick={() => setMode("owner")}
-              className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === "owner" ? "bg-[#143D60] text-white" : "text-gray-400 hover:text-gray-600"}`}
-            >
-              Gear Owner
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          </div>
+        {/* Borrower / Owner switcher — underline tab style */}
+        <div className="flex border-b border-gray-100 mb-8">
+          <button
+            onClick={() => setMode("borrower")}
+            className={`px-1 pb-3 mr-7 text-sm font-semibold border-b-2 -mb-px transition-all duration-200 ${
+              mode === "borrower"
+                ? "border-[#143D60] text-[#143D60]"
+                : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200"
+            }`}
+          >
+            Borrower
+          </button>
+          <button
+            onClick={() => setMode("owner")}
+            className={`relative px-1 pb-3 mr-7 text-sm font-semibold border-b-2 -mb-px transition-all duration-200 ${
+              mode === "owner"
+                ? "border-[#143D60] text-[#143D60]"
+                : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200"
+            }`}
+          >
+            Gear Owner
+            {pendingCount > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center w-4.5 h-4.5 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                {pendingCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {mode === "borrower" ? (

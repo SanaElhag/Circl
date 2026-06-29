@@ -11,6 +11,14 @@ export default function TermsPage() {
           style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#27667B] opacity-30 blur-3xl" />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-36 pb-24">
+          <div className="mb-8">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white transition-colors duration-200">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
           <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#DDEB9D] mb-6">Legal</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-4">Terms & Conditions</h1>
           <p className="text-white/60 text-sm">Last updated: {LAST_UPDATED}</p>
@@ -65,19 +73,6 @@ export default function TermsPage() {
                     </ul>
                   )}
 
-                  {"subsections" in s && s.subsections?.map((sub, i) => (
-                    <div key={i}>
-                      <p className="font-semibold text-[#143D60]">{sub.heading}</p>
-                      {"body" in sub && sub.body && <p>{sub.body}</p>}
-                      {"items" in sub && sub.items && (
-                        <ul className="space-y-1.5 pl-5 mt-1">
-                          {sub.items.map((item, j) => (
-                            <li key={j} className="list-disc text-gray-600">{item}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
 
                   {"footer" in s && s.footer && <p>{s.footer}</p>}
 

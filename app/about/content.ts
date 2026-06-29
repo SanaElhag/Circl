@@ -1,6 +1,5 @@
 // ── Images ────────────────────────────────────────────────────────────────────
-export const HERO_IMAGE ="/images/hero.jpg";
-
+export const HERO_IMAGE = "/images/hero.jpg";
 export const STORY_IMAGE = "/images/trust.jpg";
 
 // ── Hero section ──────────────────────────────────────────────────────────────
@@ -8,7 +7,7 @@ export const HERO = {
   eyebrow: "Our story",
   heading: "We built what we needed.",
   subheading:
-    "Circl started because a group of UFV students wanted to ski but couldn't justify the price tag. Turns out, half the campus had the same problem — and the other half had gear sitting in storage.",
+    "We're Alaa and Sana — once dormmates, now friends, hikers, and founders. We met at UFV, bonded over a shared culture and a love for the outdoors, and realized the community we were looking for didn't quite exist — so we built it ourselves.",
 };
 
 // ── Problem section ───────────────────────────────────────────────────────────
@@ -16,10 +15,10 @@ export const PROBLEM = {
   eyebrow: "Why Circl exists",
   heading: "Great gear shouldn't sit unused while other people go without.",
   paragraphs: [
-    "a7la laila a7la nas BC is one of the best places in the world for outdoor adventure. Skiing in Whistler, hiking the Rockies, kayaking the Fraser — it's all right here. And UFV sits in the middle of it.",
-    "But outdoor gear is expensive. A decent ski setup costs $800. A trail tent, another $400. For most students, that's weeks of groceries. So the mountains stay at a distance.",
-    "Meanwhile, walk through any UFV parking lot in January and you'll see ski bags gathering dust in the back of cars. Gear that got used twice and now lives in a closet.",
-    "The gear and the people who need it are in the same building. They just don't have a way to find each other. That's what Circl fixes.",
+    "BC is one of the best places in the world for outdoor adventure. Skiing, hiking, kayaking, it's all right here, basically in our backyard. And UFV sits right in the middle of it.",
+    "But gear is expensive. A decent ski setup runs $800. A trail tent, another $400. For most students, that's weeks of groceries. So the mountains stay out of reach.",
+    "At the same time, there's gear sitting in closets all over campus. Stuff that got used twice and hasn't moved since. The people and the gear are in the same building. They just have no way to find each other.",
+    "That's the gap we built Circl to close.",
   ],
   stat: {
     value: "100%",
@@ -37,38 +36,48 @@ export const VALUES_SECTION = {
 export const values = [
   {
     number: "01",
-    title: "Access over ownership",
-    body: "Great adventures shouldn't require owning $3,000 in gear. We believe the outdoors should be reachable by every student, not just the ones who can afford to kit out.",
+    title: "Trust",
+    hook: "Every transaction is built on community accountability.",
+    body: "UFV-only accounts, campus handoffs, real ratings from real people who actually showed up.",
   },
   {
     number: "02",
-    title: "Community over transactions",
-    body: "You're not renting from a faceless company. You're borrowing from someone who lives two buildings over and skied that same run last weekend.",
+    title: "Sustainability",
+    hook: "Sharing over buying, every time.",
+    body: "Every rental is gear that didn't need to be manufactured. Better for your wallet. Better for the planet.",
   },
   {
     number: "03",
-    title: "Sustainability over consumption",
-    body: "Every rental is gear that didn't need to be manufactured. Sharing what we have is one of the simplest ways to reduce waste — and it saves money too.",
+    title: "Accessibility",
+    hook: "No budget should determine who gets to explore.",
+    body: "The outdoors is for everyone, not just the ones who can afford to kit out.",
   },
   {
     number: "04",
-    title: "Trust, earned not assumed",
-    body: "UFV-only accounts, campus handoffs, and real ratings from real people. Trust has to be built into the system from the start.",
+    title: "Community",
+    hook: "We're not building a marketplace. We're building a community.",
+    body: "Every user is a neighbor, not a transaction. There's a real difference between the two.",
+  },
+  {
+    number: "05",
+    title: "Empowerment",
+    hook: "Idle gear becomes active income.",
+    body: "Every listing is a chance to help someone explore and earn something back. Big goals, bigger summits.",
   },
 ];
 
 // ── Timeline section ──────────────────────────────────────────────────────────
 export const TIMELINE_SECTION = {
   eyebrow: "The journey",
-  heading: "From whiteboard to 200 members.",
+  heading: "From one conversation to a platform.",
 };
 
 export const milestones = [
-  { year: "2024", label: "Circl founded", note: "Three students, one whiteboard, one problem" },
-  { year: "Q1 '25", label: "First 50 members", note: "Word of mouth, no ads" },
-  { year: "Q2 '25", label: "First 100 rentals", note: "Gear started moving" },
-  { year: "Now", label: "200+ members", note: "And growing every week" },
-  { year: "Next", label: "Every campus", note: "The Circl expands" },
+  { year: "Jan 2026", label: "The idea",          note: "One hiking plan turned into a question: why is this so hard?" },
+  { year: "Feb 2026", label: "Started building",  note: "Sana coded. Alaa planned. We figured it out one feature at a time." },
+  { year: "July 2026", label: "Launched at UFV",   note: "First listings. First rentals. First community." },
+  { year: "Now",      label: "Growing",            note: "Building, learning, and getting outside more than ever." },
+  { year: "Next",     label: "Every campus",       note: "The Circl expands." },
 ];
 
 // ── Team section ──────────────────────────────────────────────────────────────
@@ -76,7 +85,7 @@ export const TEAM_SECTION = {
   eyebrow: "The team",
   heading: "Students who got tired of waiting.",
   subheading:
-    "Circl was built by two UFV students who had a problem, a semester to fix it, and a conviction that someone had to.",
+    "The idea started in January 2026. Since then it's been one feature, one conversation, one hike at a time.",
 };
 
 export const team = [
@@ -84,13 +93,19 @@ export const team = [
     initial: "A",
     name: "Alaa",
     role: "Co-founder",
-    bio: "Business student.",
+    bio: "Business grad, hiker, and the one who spotted the problem and wouldn't stop talking about it until we built something. Circl started as a conversation, Alaa made sure it didn't end there.",
   },
   {
     initial: "S",
     name: "Sana",
     role: "Co-founder & Tech",
-    bio: "CIS Student.",
+    bio: "CIS student and the one who built what you're looking at right now. Circl is the website Sana wished existed, so she built it, and became its first user.",
+  },
+  {
+    initial: "C",
+    name: "Chang",
+    role: "Advisor",
+    bio: "Business professor and the person who told us to stop overthinking and start building. Has been in our corner since day one.",
   },
 ];
 
@@ -103,15 +118,15 @@ export const IMPACT_SECTION = {
 export const impactCards = [
   {
     title: "Owners earn",
-    body: "Gear that sits unused is gear that costs money. Every rental turns storage into income. Even a weekend rental can cover a month of coffee.",
+    body: "Gear sitting in a closet isn't doing anything for you. Every rental turns storage into income, even a weekend rental can cover your next adventure.",
   },
   {
     title: "Renters explore",
-    body: "Trying a new sport is a lot more appealing when it costs $25 for a weekend instead of $800 to buy in. Circl lowers the barrier to new adventures.",
+    body: "Trying a new sport is a lot easier when it costs $25 for a weekend instead of $800 to buy in. That's how we think it should work.",
   },
   {
-    title: "Everyone benefits",
-    body: "Shared gear means less manufacturing, less waste, and a smaller footprint. The outdoor community has always known: take care of the land and each other.",
+    title: "The planet benefits",
+    body: "Less manufacturing, less waste. Shared gear is a quiet form of environmental action, one that also happens to save everyone money.",
   },
 ];
 
@@ -120,7 +135,7 @@ export const CTA = {
   eyebrow: "Join the community",
   heading: "Ready to use Circl?",
   subheading:
-    "Join 200+ UFV students and staff who are already renting, lending, and getting outside more for less.",
+    "Whether you've got gear to share or adventures to plan — there's a place for you here.",
   primaryButton: "Create free account",
   secondaryButton: "Browse gear first",
 };

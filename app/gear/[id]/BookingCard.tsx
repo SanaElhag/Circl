@@ -37,6 +37,7 @@ export default function BookingCard({
     });
   }, []);
 
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -53,10 +54,6 @@ export default function BookingCard({
       : 0;
 
   const subtotal = pricePerDay * days;
-  const platformFee = subtotal * 0.15;
-  const gst = (subtotal + platformFee) * 0.05;
-  const pst = (subtotal + platformFee) * 0.07;
-  const total = subtotal + platformFee + gst + pst;
 
   function handleCheckout() {
     if (!range?.from || !range?.to) return;
@@ -69,10 +66,11 @@ export default function BookingCard({
     if (note.trim()) params.set("note", note.trim());
 
     if (!userId) {
-      router.push(`/auth/login?redirect=/checkout?${params.toString()}`);
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/checkout/${listingId}?${params.toString()}`)}`);
       return;
     }
-    router.push(`/checkout?${params.toString()}`);
+
+    router.push(`/checkout/${listingId}?${params.toString()}`);
   }
 
   // Wait for auth to resolve before deciding — avoids flash of wrong state
@@ -149,29 +147,10 @@ export default function BookingCard({
         />
       </div>
 
-      {/* Price summary */}
       {days > 0 && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between text-gray-500">
-            <span>${pricePerDay.toFixed(2)} × {days} {days === 1 ? "day" : "days"}</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-gray-500">
-            <span>Platform fee (15%)</span>
-            <span>${platformFee.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-gray-500">
-            <span>GST (5%)</span>
-            <span>${gst.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-gray-500">
-            <span>PST (7%)</span>
-            <span>${pst.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-[#143D60] border-t border-gray-200 pt-2">
-            <span>Total</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">{days} {days === 1 ? "day" : "days"}</span>
+          <span className="font-semibold text-[#143D60]">${subtotal.toFixed(2)}</span>
         </div>
       )}
 
