@@ -132,11 +132,11 @@ function CheckoutContent() {
 
       const payRef = `CRC-${req.id.slice(0, 8).toUpperCase()}`;
       router.push(
-        `/checkout/success?request=${req.id}&ref=${payRef}&listing=${encodeURIComponent(listing.title)}&days=${days}&total=${fmt(total)}&start=${startDate}&end=${endDate}`
+        `/checkout/${listing.id}/success?request=${req.id}&ref=${payRef}&listing=${encodeURIComponent(listing.title)}&days=${days}&total=${fmt(total)}&start=${startDate}&end=${endDate}`
       );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
-      router.push(`/checkout/failed?listing=${listingId}&start=${startDate}&end=${endDate}&note=${encodeURIComponent(note)}`);
+      router.push(`/checkout/${listingId}/failed?listing=${listingId}&start=${startDate}&end=${endDate}&note=${encodeURIComponent(note)}`);
     } finally {
       setSubmitting(false);
     }

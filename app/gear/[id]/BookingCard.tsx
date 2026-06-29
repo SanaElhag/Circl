@@ -66,7 +66,7 @@ export default function BookingCard({
     if (note.trim()) params.set("note", note.trim());
 
     if (!userId) {
-      router.push(`/auth/login?redirect=/checkout/${listingId}?${params.toString()}`);
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/checkout/${listingId}?${params.toString()}`)}`);
       return;
     }
 

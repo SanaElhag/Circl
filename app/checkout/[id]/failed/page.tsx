@@ -13,7 +13,7 @@ function FailedContent() {
   const note = params.get("note") ?? "";
   const reason = params.get("reason") ?? null;
 
-  const retryUrl = `/checkout?listing=${listingId}&start=${startDate}&end=${endDate}${note ? `&note=${encodeURIComponent(note)}` : ""}`;
+  const retryUrl = `/checkout/${listingId}?listing=${listingId}&start=${startDate}&end=${endDate}${note ? `&note=${encodeURIComponent(note)}` : ""}`;
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] flex flex-col">

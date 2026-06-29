@@ -87,14 +87,61 @@ export default function AboutPage() {
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-4">{VALUES_SECTION.eyebrow}</p>
             <h2 className="text-4xl font-bold tracking-tight">{VALUES_SECTION.heading}</h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
-            {values.map((v) => (
-              <div key={v.number} className="bg-white p-10 hover:bg-[#F9FAFB] transition-colors duration-200">
-                <span className="text-xs font-bold tracking-[0.25em] text-gray-200">{v.number}</span>
-                <h3 className="mt-4 text-xl font-bold text-[#143D60] leading-snug">{v.title}</h3>
-                <p className="mt-3 text-gray-500 leading-relaxed text-sm">{v.body}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* 01 Trust — navy, wide */}
+            <div className="md:col-span-2 rounded-3xl bg-[#143D60] p-10 relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+              <span className="absolute right-0 bottom-0 text-[200px] font-black text-white/[0.04] leading-none select-none pointer-events-none translate-x-6 translate-y-8">{values[0].number}</span>
+              <p className="text-[#DDEB9D] text-[10px] font-bold tracking-[0.3em] uppercase">{values[0].title}</p>
+              <div>
+                <p className="text-white text-2xl font-bold leading-snug max-w-xs mb-3">{values[0].hook}</p>
+                <p className="text-white/40 text-sm leading-relaxed max-w-sm">{values[0].body}</p>
               </div>
-            ))}
+            </div>
+
+            {/* 02 Sustainability — lime, narrow */}
+            <div className="rounded-3xl bg-[#DDEB9D] p-10 relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+              <span className="absolute right-0 bottom-0 text-[200px] font-black text-[#143D60]/[0.06] leading-none select-none pointer-events-none translate-x-6 translate-y-8">{values[1].number}</span>
+              <p className="text-[#143D60]/50 text-[10px] font-bold tracking-[0.3em] uppercase">{values[1].title}</p>
+              <div>
+                <p className="text-[#143D60] text-xl font-bold leading-snug mb-3">{values[1].hook}</p>
+                <p className="text-[#143D60]/50 text-sm leading-relaxed">{values[1].body}</p>
+              </div>
+            </div>
+
+            {/* 03 Accessibility — warm off-white, narrow */}
+            <div className="rounded-3xl bg-[#F5F0E8] p-10 relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+              <span className="absolute right-0 bottom-0 text-[200px] font-black text-[#143D60]/[0.05] leading-none select-none pointer-events-none translate-x-6 translate-y-8">{values[2].number}</span>
+              <p className="text-[#27667B] text-[10px] font-bold tracking-[0.3em] uppercase">{values[2].title}</p>
+              <div>
+                <p className="text-[#143D60] text-xl font-bold leading-snug mb-3">{values[2].hook}</p>
+                <p className="text-[#143D60]/50 text-sm leading-relaxed">{values[2].body}</p>
+              </div>
+            </div>
+
+            {/* 04 Community — teal, wide */}
+            <div className="md:col-span-2 rounded-3xl bg-[#27667B] p-10 relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+              <span className="absolute right-0 bottom-0 text-[200px] font-black text-white/[0.04] leading-none select-none pointer-events-none translate-x-6 translate-y-8">{values[3].number}</span>
+              <p className="text-white/40 text-[10px] font-bold tracking-[0.3em] uppercase">{values[3].title}</p>
+              <div>
+                <p className="text-white text-2xl font-bold leading-snug max-w-xs mb-3">{values[3].hook}</p>
+                <p className="text-white/40 text-sm leading-relaxed max-w-sm">{values[3].body}</p>
+              </div>
+            </div>
+
+            {/* 05 Empowerment — full width, navy with lime hook */}
+            <div className="md:col-span-3 rounded-3xl bg-[#143D60] p-10 relative overflow-hidden">
+              <span className="absolute right-0 bottom-0 text-[220px] font-black text-white/[0.03] leading-none select-none pointer-events-none translate-x-8 translate-y-10">{values[4].number}</span>
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative">
+                <div className="max-w-xl">
+                  <p className="text-[#DDEB9D]/60 text-[10px] font-bold tracking-[0.3em] uppercase mb-5">{values[4].title}</p>
+                  <p className="text-[#DDEB9D] text-3xl font-bold leading-snug">{values[4].hook}</p>
+                </div>
+                <p className="text-white/40 text-sm leading-relaxed md:max-w-xs">{values[4].body}</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
