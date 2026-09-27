@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { SkeletonRow, Skeleton } from "@/app/components/Skeleton";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -183,8 +184,17 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#F9FAFB] pt-24 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#143D60] border-t-transparent animate-spin" />
+      <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm divide-y divide-gray-50 overflow-hidden">
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        </div>
       </main>
     );
   }

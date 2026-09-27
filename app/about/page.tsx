@@ -236,13 +236,6 @@ export default function AboutPage() {
               {CTA.secondaryButton}
             </Link>
           </div>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-white/30">
-            <Link href="/contact" className="hover:text-white/60 transition-colors duration-200">Get in touch</Link>
-            <span className="hidden sm:block">·</span>
-            <Link href="/faqs" className="hover:text-white/60 transition-colors duration-200">Read the FAQs</Link>
-            <span className="hidden sm:block">·</span>
-            <Link href="/community" className="hover:text-white/60 transition-colors duration-200">Visit the community</Link>
-          </div>
         </div>
       </section>
 

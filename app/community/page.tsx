@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import CommunityFeed from "./CommunityFeed";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabasePublic } from "@/lib/supabasePublic";
 
 export default async function CommunityPage() {
+  const supabase = supabasePublic(30);
+
   // Fetch posts
   const { data: posts } = await supabase
     .from("posts")

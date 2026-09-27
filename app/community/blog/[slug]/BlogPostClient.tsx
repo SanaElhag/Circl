@@ -46,7 +46,7 @@ function DotMenu({ onDelete }: DotMenuProps) {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen((v) => !v)}
-        className="w-6 h-6 flex items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200">
+        className="w-6 h-6 flex items-center justify-center rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200">
         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>

@@ -1,11 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@supabase/supabase-js";
+import { supabasePublic } from "@/lib/supabasePublic";
 import NewsletterForm from "./components/NewsletterForm";
 
-
-const HERO_IMAGE   = "/images/hero.jpg";      
-const TRUST_IMAGE  = "/images/trust.jpg";     
+const HERO_IMAGE   = "/images/hero.jpg";
+const TRUST_IMAGE  = "/images/trust.jpg";
 const PLACEHOLDER_IMAGE = "/images/gear-placeholder.jpg";
 
 const trustPoints = [
@@ -45,27 +44,76 @@ const conditionColors: Record<string, string> = {
   "Worn":      "bg-[#E8DFCE] text-[#6B5E4E]",
 };
 
-async function getFeaturedListings() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  const { data, error } = await supabase
-    .from("listings")
-    .select("id, title, category, price_per_day, condition, image_url, description")
-    .eq("available", true)
-    .order("created_at", { ascending: false })
-    .limit(3);
+interface HeroSlide {
+  image_url: string;
+  headline: string;
+  subheadline: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+}
 
-  if (error) {
-    console.error("Failed to fetch featured listings:", error.message);
-    return [];
-  }
-  return data ?? [];
+interface PromoConfig {
+  title: string;
+  description: string;
+  badge_text: string;
+  is_active: boolean;
+  expires_at: string | null;
+}
+
+interface Testimonial {
+  name: string;
+  position_title: string | null;
+  content: string;
+}
+
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+async function getHomeData() {
+  // Cached for a minute — admin edits (hero slide, promo, testimonials) and
+  // new listings show up within that window instead of needing a redeploy,
+  // without hitting the database on every single visit.
+  const supabase = supabasePublic(60);
+
+  const [{ data: featured }, { data: heroSlides }, { data: promoRows }, { data: testimonialRows }] =
+    await Promise.all([
+      supabase
+        .from("listings")
+        .select("id, title, category, price_per_day, condition, image_url, description")
+        .eq("available", true)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase
+        .from("hero_slides")
+        .select("image_url, headline, subheadline, cta_text, cta_url")
+        .eq("is_active", true)
+        .order("position")
+        .limit(1),
+      supabase
+        .from("promo_config")
+        .select("title, description, badge_text, is_active, expires_at")
+        .limit(1),
+      supabase
+        .from("testimonials")
+        .select("name, position_title, content")
+        .eq("is_active", true)
+        .order("display_order"),
+    ]);
+
+  const promo = (promoRows?.[0] as PromoConfig | undefined) ?? null;
+  const promoActive = !!promo?.is_active && (!promo.expires_at || new Date(promo.expires_at) > new Date());
+
+  return {
+    featured: featured ?? [],
+    heroSlide: (heroSlides?.[0] as HeroSlide | undefined) ?? null,
+    promo: promoActive ? promo : null,
+    testimonials: (testimonialRows ?? []) as Testimonial[],
+  };
 }
 
 export default async function HomePage() {
-  const featured = await getFeaturedListings();
+  const { featured, heroSlide, promo, testimonials } = await getHomeData();
 
   return (
     <div className="bg-[#F5F0E8] text-[#1A1612]">
@@ -73,7 +121,7 @@ export default async function HomePage() {
       {/* ── HERO ────────────────────────────────────────────────── */}
       <section className="relative h-[90vh] min-h-[600px] flex items-end pb-20 overflow-hidden">
         <Image
-          src={HERO_IMAGE}
+          src={heroSlide?.image_url ?? HERO_IMAGE}
           alt="Hiking in the BC mountains"
           fill
           className="object-cover object-center"
@@ -100,24 +148,29 @@ export default async function HomePage() {
               <span className="block w-7 h-px bg-[#DDEB9D]" />
             </div>
 
-            <h1 className="font-display text-[clamp(60px,6vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5">
-              <span className="text-white drop-shadow-lg">Plan The Trip</span><br />
-              <em className="not-italic text-[#DDEB9D] drop-shadow-lg">We&apos;ll Handle The Rest</em>
-            </h1>
+            {heroSlide ? (
+              <h1 className="font-display text-[clamp(48px,5.5vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5 text-white drop-shadow-lg">
+                {heroSlide.headline}
+              </h1>
+            ) : (
+              <h1 className="font-display text-[clamp(60px,6vw,64px)] font-black leading-[1.06] tracking-[-0.02em] mb-5">
+                <span className="text-white drop-shadow-lg">Plan The Trip</span><br />
+                <em className="not-italic text-[#DDEB9D] drop-shadow-lg">We&apos;ll Handle The Rest</em>
+              </h1>
+            )}
 
             <p className="text-[18px] font-medium text-white/90 leading-relaxed max-w-[580px] mb-8 drop-shadow">
-              Someone on campus already owns exactly what you need.  Skip the store, borrow from your community instead.
-              
+              {heroSlide?.subheadline ??
+                "Someone on campus already owns exactly what you need. Skip the store, borrow from your community instead."}
             </p>
 
             <div className="flex gap-3 items-center flex-wrap">
               <Link
-                href="/browse/"
+                href={heroSlide?.cta_url ?? "/browse"}
                 className="rounded-full bg-[#DDEB9D] px-7 py-3.5 text-[15px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200 shadow-lg"
               >
-                Browse Gear
+                {heroSlide?.cta_text ?? "Browse Gear"}
               </Link>
-              {/* looks kinda weird to me but idk lets see */}
               <Link
                 href="/auth/register"
                 className="text-[15px] font-semibold text-white hover:text-[#DDEB9D] transition-colors duration-200 flex items-center gap-1.5"
@@ -127,39 +180,9 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* Scroll indicator - do we really need this? keep remove? idk let's see */}
-        {/* <div className="absolute bottom-8 right-8 z-10 flex flex-col items-center gap-2">
-          <div className="h-10 w-px bg-white/40" />
-          <p className="text-[9px] tracking-[0.2em] uppercase text-white/60">Scroll</p>
-        </div> */}
       </section>
 
-      
-     {/* ── STATS STRIP - Make these real numbers from the db when we have users, bas if the numbers are small balash  */}
-      {/* <div className="bg-[#FAF7F2] border-b border-[#D4C9B0]">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#D4C9B0]">
-            {[
-              { value: "55+", label: "Verified members" },
-              { value: "10+",  label: "Active listings" },
-              { value: "100%", label: "UFV verified" },
-              { value: "Free", label: "To join" },
-            ].map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center text-center px-6 py-6">
-                <span className="font-display text-[28px] font-bold text-[#143D60] tracking-tight leading-none">
-                  {stat.value}
-                </span>
-                <span className="mt-1.5 text-[10px] font-medium tracking-[0.18em] uppercase text-[#6B5E4E]">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div> */}
-
-      {/* ── FEATURED TODAY - no need to edit this comes from db */}
+      {/* ── FEATURED TODAY — live from the db ── */}
       <section className="bg-[#F5F0E8] py-24">
         <div className="mx-auto max-w-7xl px-7 sm:px-8">
 
@@ -285,38 +308,41 @@ export default async function HomePage() {
         </div>
       </section>
 
-
-      {/* ── PROMO BANNER - we can edit this now, eventually we'll add to the db and have the admin/mod edit it without access to the code */}
-      <section className="bg-[#143D60] py-20">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-0">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-2 mb-5">
-                <span className="text-[12px] font-semibold tracking-[0.28em] uppercase text-[#DDEB9D]/70">Expand the Circle!</span>
-                <span className="block w-6 h-px bg-[#DDEB9D]/50" />
+      {/* ── PROMO BANNER — driven by the admin panel's Promo Config.
+          Hidden entirely when there's no active (or not-yet-expired) promo,
+          rather than always showing a hardcoded offer nobody can redeem. */}
+      {promo && (
+        <section className="bg-[#143D60] py-20">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="max-w-xl">
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="text-[12px] font-semibold tracking-[0.28em] uppercase text-[#DDEB9D]/70">
+                    {promo.badge_text}
+                  </span>
+                  <span className="block w-6 h-px bg-[#DDEB9D]/50" />
+                </div>
+                <h2 className="font-display text-[32px] md:text-[38px] font-bold text-white leading-[1.12] tracking-tight">
+                  {promo.title}
+                </h2>
+                <p className="mt-4 text-white/50 text-[14px] leading-relaxed max-w-sm">
+                  {promo.description}
+                </p>
               </div>
-              <h2 className="font-display text-[32px] md:text-[38px] font-bold text-white leading-[1.12] tracking-tight whitespace-nowrap">
-                Friends who borrow together, save together :) <br />
-                <em className="not-italic text-[#DDEB9D]"> Invite one, get $5 off.</em>
-              </h2>
-              {/* <p className="mt-4 text-white/50 text-[14px] leading-relaxed max-w-sm">
-                Create your account today and your first rental is automatically
-                discounted. No code needed, no fine print.
-              </p> */}
-            </div>
-            <div className="shrink-0">
-              <Link
-                href="/auth/register"
-                className="inline-flex items-center gap-2 rounded-full bg-[#DDEB9D] px-10 py-4 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
-              >
-                Invite Code  →
-              </Link>
+              <div className="shrink-0">
+                <Link
+                  href="/auth/register"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#DDEB9D] px-10 py-4 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
+                >
+                  Claim Offer →
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* ── TRUST - this is just the laout, edit content on top*/}
+      {/* ── TRUST ── */}
       <section className="bg-[#FAF7F2] py-24">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-20 items-start">
@@ -346,88 +372,74 @@ export default async function HomePage() {
               </div>
 
               <Link
-                href="/become-owner"
+                href="/list-your-gear"
                 className="inline-flex items-center gap-2 mt-12 rounded-full border border-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-[#143D60] hover:bg-[#143D60] hover:text-white transition-all duration-200"
               >
                 Start listing your gear →
               </Link>
             </div>
 
-            {/* Right — image card with stats */}
+            {/* Right — image card */}
             <div className="relative h-[520px] rounded-2xl overflow-hidden shadow-xl">
               <Image src={TRUST_IMAGE} alt="Outdoor adventure in BC" fill className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#071a2c]/85 via-[#071a2c]/30 to-transparent" />
 
-              {/* Stats overlay at bottom -- we can remove these for now cause it's a lie lol */}
               <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {[
-                    { value: "55", label: "Subscribers" },
-                    { value: "10+",  label: "Listings" },
-                    { value: "100%", label: "Verified" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <p className="font-display text-[26px] font-bold text-white leading-none">{stat.value}</p>
-                      <p className="text-[9px] tracking-[0.2em] uppercase text-white/45 mt-1">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-white/10 pt-5">
-                  <p className="text-[13px] text-white/60 leading-relaxed italic">
-                    &ldquo;I listed my snowboard during exams and someone rented it for a week. Easiest money I&apos;ve made as a student.&rdquo;
-                  </p>
-                  <p className="text-[11px] text-white/35 mt-2 font-medium not-italic">
-                    Sarah M. — Kinesiology, Year 3
-                  </p>
-                </div>
+                <p className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#DDEB9D]/70 mb-3">
+                  Just getting started
+                </p>
+                <p className="font-display text-[26px] font-bold text-white leading-tight">
+                  Circl is brand new at UFV.
+                </p>
+                <p className="text-[13px] text-white/60 leading-relaxed mt-3 max-w-sm">
+                  The first listings are going up now. Post your gear early and you&apos;ll be
+                  the first thing people see when they come looking.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── TESTIMONIALS - just layout edit content on top*/}
-      {/* <section className="bg-[#F5F0E8] py-24">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+      {/* ── TESTIMONIALS — from the db, hidden until there's at least one to show ── */}
+      {testimonials.length > 0 && (
+        <section className="bg-[#F5F0E8] py-24">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8">
 
-          <div className="mb-14">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">From the community</span>
-              <span className="block w-8 h-px bg-[#27667B]" />
+            <div className="mb-14">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#27667B]">From the community</span>
+                <span className="block w-8 h-px bg-[#27667B]" />
+              </div>
+              <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
+                Real stories <em className="not-italic text-[#27667B]">from UFV.</em>
+              </h2>
             </div>
-            <h2 className="font-display text-[34px] font-bold tracking-tight text-[#143D60] leading-tight">
-              Real stories <em className="not-italic text-[#27667B]">from UFV.</em>
-            </h2>
-            <p className="mt-2 text-[13px] text-[#6B5E4E]">Placeholder reviews — real ones on the way.</p>
-          </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="bg-[#FAF7F2] border border-[#D4C9B0] rounded-2xl p-8 flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
-              >
-      
-                <span className="font-display text-[52px] text-[#DDEB9D] leading-none mb-4 block select-none">&ldquo;</span>
-                <p className="text-[13px] text-[#6B5E4E] leading-[1.75] flex-1">{t.quote}</p>
-                <div className="mt-8 pt-5 border-t border-[#E8DFCE] flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#143D60] flex items-center justify-center text-[12px] font-bold text-[#DDEB9D] shrink-0">
-                    {t.initial}
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#143D60]">{t.name}</p>
-                    <p className="text-[11px] text-[#6B5E4E]">{t.role}</p>
+            <div className="grid gap-6 md:grid-cols-3">
+              {testimonials.map((t) => (
+                <div
+                  key={t.name}
+                  className="bg-[#FAF7F2] border border-[#D4C9B0] rounded-2xl p-8 flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+                >
+                  <span className="font-display text-[52px] text-[#DDEB9D] leading-none mb-4 block select-none">&ldquo;</span>
+                  <p className="text-[13px] text-[#6B5E4E] leading-[1.75] flex-1">{t.content}</p>
+                  <div className="mt-8 pt-5 border-t border-[#E8DFCE] flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-[#143D60] flex items-center justify-center text-[12px] font-bold text-[#DDEB9D] shrink-0">
+                      {initials(t.name)}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#143D60]">{t.name}</p>
+                      {t.position_title && <p className="text-[11px] text-[#6B5E4E]">{t.position_title}</p>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section> */}
+        </section>
+      )}
 
-      {/* ── HOW IT WORKS -- we can edit this here, but we should move this up eh? do we even need this? */}
-      
       {/* ── NEWSLETTER ──────────────────────────────────────────── */}
       <section className="bg-[#143D60] py-20">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">

@@ -254,7 +254,7 @@ function BlogEditorContent() {
                 <Image src={coverPreview} alt="Cover" fill className="object-cover" />
                 <button
                   onClick={() => { setCoverFile(null); setExistingCoverUrl(null); }}
-                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
                 >
                   Remove
                 </button>
@@ -357,7 +357,7 @@ function BlogEditorContent() {
           <section className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">Body</h2>
-              <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">HTML supported</span>
+              <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100">HTML supported</span>
             </div>
             <textarea
               value={form.body}

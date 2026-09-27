@@ -3,44 +3,55 @@
 import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { passwordMeetsPolicy, firstUnmetRule } from "@/lib/password";
+import PasswordStrength from "@/app/components/PasswordStrength";
 
 const ALLOWED_DOMAINS = ["student.ufv.ca", "ufv.ca"];
-const PASSWORD_MIN = 8;
 
 function isUFVEmail(email: string) {
   const lower = email.toLowerCase().trim();
   return ALLOWED_DOMAINS.some((d) => lower.endsWith(`@${d}`));
 }
 
-function validate(fullName: string, email: string, password: string): string | null {
-  if (!fullName.trim())                        return "Please enter your full name.";
-  if (!email.trim())                           return "Please enter your email address.";
-  if (!isUFVEmail(email))                      return "Please use your UFV email address (@student.ufv.ca or @ufv.ca).";
-  if (!password)                               return "Please enter a password.";
-  if (password.length < PASSWORD_MIN)          return `Password must be at least ${PASSWORD_MIN} characters.`;
+function validate(fullName: string, email: string, password: string, confirmPassword: string): string | null {
+  if (!fullName.trim())               return "Please enter your full name.";
+  if (!email.trim())                  return "Please enter your email address.";
+  if (!isUFVEmail(email))             return "Please use your UFV email address (@student.ufv.ca or @ufv.ca).";
+  if (!password)                      return "Please enter a password.";
+  if (!passwordMeetsPolicy(password)) {
+    const rule = firstUnmetRule(password);
+    return rule ? `Password needs ${rule.label.toLowerCase()}.` : "Please choose a stronger password.";
+  }
+  if (password !== confirmPassword)   return "The two passwords don't match.";
   return null;
 }
 
 export default function RegisterPage() {
-  const [fullName,     setFullName]     = useState("");
-  const [email,        setEmail]        = useState("");
-  const [password,     setPassword]     = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
-  const [loading,      setLoading]      = useState(false);
-  const [submitted,    setSubmitted]    = useState(false);
+  const [fullName,        setFullName]        = useState("");
+  const [email,           setEmail]           = useState("");
+  const [password,        setPassword]        = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword,    setShowPassword]    = useState(false);
+  const [error,           setError]           = useState<string | null>(null);
+  const [loading,         setLoading]         = useState(false);
+  const [submitted,       setSubmitted]       = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const err = validate(fullName, email, password);
+    const err = validate(fullName, email, password, confirmPassword);
     if (err) { setError(err); return; }
     setLoading(true);
     try {
       const { error: supaErr } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
-        options: { data: { full_name: fullName.trim() } },
+        options: {
+          data: { full_name: fullName.trim() },
+          // Without this the confirmation link points at whatever "Site URL" is
+          // set in the Supabase dashboard — usually localhost.
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (supaErr) {
         if (supaErr.message.includes("already registered"))
@@ -56,7 +67,7 @@ export default function RegisterPage() {
     }
   }
 
-  const filled = fullName.trim() !== "" && email.trim() !== "" && password !== "";
+  const filled = fullName.trim() !== "" && email.trim() !== "" && password !== "" && confirmPassword !== "";
 
   /* ── Confirmation screen ── */
   if (submitted) {
@@ -91,7 +102,11 @@ export default function RegisterPage() {
             </p>
             <button
               onClick={async () => {
-                await supabase.auth.resend({ type: "signup", email: email.trim().toLowerCase() });
+                await supabase.auth.resend({
+                  type: "signup",
+                  email: email.trim().toLowerCase(),
+                  options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+                });
               }}
               className="text-sm font-semibold text-[#27667B] hover:text-[#143D60] transition-colors underline underline-offset-2 mb-6 block mx-auto"
             >
@@ -216,6 +231,26 @@ export default function RegisterPage() {
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
+              <PasswordStrength password={password} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#143D60]">Confirm password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`w-full bg-white border rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-300 outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  confirmPassword && confirmPassword !== password
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-200 focus:ring-[#27667B]"
+                }`}
+              />
+              {confirmPassword && confirmPassword !== password && (
+                <p className="text-[11px] text-red-500">Passwords don&apos;t match.</p>
+              )}
             </div>
 
             {error && (

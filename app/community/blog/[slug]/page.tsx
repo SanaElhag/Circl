@@ -1,13 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BlogPostClient from "./BlogPostClient";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabasePublic } from "@/lib/supabasePublic";
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-CA", {
@@ -29,6 +24,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const supabase = supabasePublic();
 
   const { data: post, error } = await supabase
     .from("blog_posts")
@@ -172,7 +168,7 @@ export default async function BlogPostPage({
                   href={`/community/blog/${r.slug}`}
                   className="group flex gap-3 rounded-xl border border-gray-100 bg-[#F9FAFB] hover:bg-white hover:shadow-md p-4 transition-all duration-200"
                 >
-                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                     {r.cover_image_url && (
                       <Image src={r.cover_image_url} alt={r.title} fill className="object-cover" sizes="64px" />
                     )}

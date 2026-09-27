@@ -170,22 +170,22 @@ export default function TopNav() {
               {communityOpen && <div className="absolute top-full left-0 w-full h-4" />}
             </div>
 
-            {/* Become an Owner */}
+            {/* For Gear Owners */}
             {user ? (
               <Link
-                href="/become-owner"
+                href="/list-your-gear"
                 className={`text-sm transition-colors duration-200 ${
-                  pathname.startsWith("/become-owner") ? "text-[#143D60] font-semibold" : "text-gray-500 hover:text-[#143D60]"
+                  pathname.startsWith("/list-your-gear") ? "text-[#143D60] font-semibold" : "text-gray-500 hover:text-[#143D60]"
                 }`}
               >
-                Become an Owner
+                For Gear Owners
               </Link>
             ) : (
               <Link
-                href="/auth/login?redirect=/become-owner"
+                href="/auth/login?redirect=/list-your-gear"
                 className="text-sm text-gray-500 hover:text-[#143D60] transition-colors duration-200"
               >
-                Become an Owner
+                For Gear Owners
               </Link>
             )}
           </nav>
@@ -413,8 +413,8 @@ export default function TopNav() {
               className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">About</Link>
             <Link href="/community" onClick={() => setMobileOpen(false)}
               className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">Community</Link>
-            <Link href="/become-owner" onClick={() => setMobileOpen(false)}
-              className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">Become an Owner</Link>
+            <Link href="/list-your-gear" onClick={() => setMobileOpen(false)}
+              className="py-3 text-sm font-medium text-[#143D60] border-b border-gray-50">For Gear Owners</Link>
             {user && (
               <>
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}

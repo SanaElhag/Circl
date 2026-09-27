@@ -422,14 +422,14 @@ useEffect(() => {
                   <label className="text-[10px] text-gray-400 mb-1 block">Min</label>
                   <input type="number" min={0} max={maxPrice} value={minPrice}
                     onChange={(e) => setMinPrice(Number(e.target.value))}
-                    className="w-full rounded-lg border border-gray-100 bg-white px-3 py-2 text-sm text-[#143D60] outline-none focus:border-[#27667B] transition-colors" />
+                    className="w-full rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm text-[#143D60] outline-none focus:border-[#27667B] transition-colors" />
                 </div>
                 <span className="text-gray-300 text-sm mt-4">—</span>
                 <div className="flex-1">
                   <label className="text-[10px] text-gray-400 mb-1 block">Max</label>
                   <input type="number" min={minPrice} max={500} value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full rounded-lg border border-gray-100 bg-white px-3 py-2 text-sm text-[#143D60] outline-none focus:border-[#27667B] transition-colors" />
+                    className="w-full rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm text-[#143D60] outline-none focus:border-[#27667B] transition-colors" />
                 </div>
               </div>
             </div>

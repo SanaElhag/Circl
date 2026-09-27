@@ -2,9 +2,9 @@ import Link from "next/link";
 
 const platformLinks = [
   { label: "Browse Gear",       href: "/browse" },
-  { label: "List Your Gear",    href: "/post-gear" },
+  { label: "Post a Listing",    href: "/post-gear" },
   { label: "How It Works",      href: "/#how" },
-  { label: "Start a Business",  href: "/become-owner" },
+  { label: "For Gear Owners",   href: "/list-your-gear" },
 ];
 
 const companyLinks = [
@@ -17,6 +17,7 @@ const companyLinks = [
 const legalLinks = [
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Privacy Policy",     href: "/privacy" },
+  { label: "Cookie Policy",      href: "/cookies" },
   { label: "Cancellation",       href: "/cancellation" },
 ];
 
@@ -38,14 +39,11 @@ export default function Footer() {
               Adventure, made accessible, one rental at a time.
             </p>
 
-            {/* Contact */}
+            {/* Contact — no phone line or domain yet, so just the essentials */}
             <div className="mt-8 flex flex-col gap-2.5 text-xs text-gray-500 leading-loose">
               <span>BC, Canada</span>
-              <a href="tel:1234567890" className="hover:text-gray-300 transition-colors duration-200">
-                123-456-789
-              </a>
-              <a href="mailto:info@circl.com" className="hover:text-gray-300 transition-colors duration-200">
-                info@circl.com
+              <a href="mailto:circl@gmail.com" className="hover:text-gray-300 transition-colors duration-200">
+                circl@gmail.com
               </a>
             </div>
           </div>
@@ -109,44 +107,15 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom row */}
+      {/* Bottom row.
+          No social row here on purpose — those links pointed at instagram.com /
+          tiktok.com / linkedin.com's generic homepages, not real Circl accounts.
+          Add them back once real profiles exist. */}
       <div className="border-t border-white/8">
-        <div className="mx-auto max-w-7xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-
+        <div className="mx-auto max-w-7xl px-6 py-6 flex items-center justify-center">
           <span className="text-xs text-gray-600 tracking-wide">
             © {new Date().getFullYear()} Circl. All rights reserved.
           </span>
-
-          {/* Social links as text — per spec */}
-          <div className="flex items-center gap-6">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold tracking-[0.15em] uppercase text-gray-600 hover:text-white transition-colors duration-200"
-            >
-              Instagram
-            </a>
-            <span className="text-gray-700">—</span>
-            <a
-              href="https://tiktok.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold tracking-[0.15em] uppercase text-gray-600 hover:text-white transition-colors duration-200"
-            >
-              TikTok
-            </a>
-            <span className="text-gray-700">—</span>
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold tracking-[0.15em] uppercase text-gray-600 hover:text-white transition-colors duration-200"
-            >
-              LinkedIn
-            </a>
-          </div>
-
         </div>
       </div>
 

@@ -1,11 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabasePublic } from "@/lib/supabasePublic";
 
 interface NewsPost {
   id: string;
@@ -42,6 +37,7 @@ const TAG_COLORS: Record<string, string> = {
 const TAGS = ["All", "Announcements", "Events", "Partnerships", "Gear Drops", "Community"];
 
 export default async function CampusNewsPage() {
+  const supabase = supabasePublic();
   const { data: news } = await supabase
     .from("campus_news")
     .select(`

@@ -1,6 +1,6 @@
 export const LAST_UPDATED = "April 6, 2026";
 export const COMPANY_NAME = "Circl";
-export const CONTACT_EMAIL = "legal@circl.ca";
+export const CONTACT_EMAIL = "circl@gmail.com";
 
 export const PREAMBLE = `Please read these Terms carefully before using ${COMPANY_NAME}. These Terms govern your use of our peer-to-peer outdoor gear rental marketplace. By creating an account or using the Platform, you agree to be bound by these Terms.`;
 

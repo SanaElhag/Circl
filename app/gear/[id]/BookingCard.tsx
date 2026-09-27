@@ -13,6 +13,7 @@ interface BookingCardProps {
   available: boolean;
   availableFrom: string | null;
   availableUntil: string | null;
+  ownerStripeEnabled: boolean;
 }
 
 export default function BookingCard({
@@ -22,6 +23,7 @@ export default function BookingCard({
   available,
   availableFrom,
   availableUntil,
+  ownerStripeEnabled,
 }: BookingCardProps) {
   const router = useRouter();
   const [range, setRange] = useState<DateRange | undefined>();
@@ -105,6 +107,19 @@ export default function BookingCard({
     );
   }
 
+  // Owner hasn't finished Stripe Connect onboarding — can't accept payments yet
+  if (!ownerStripeEnabled) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-2">
+        <div className="flex items-center justify-center gap-2 text-gray-400">
+          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+          <span className="text-sm font-semibold">Payouts not set up yet</span>
+        </div>
+        <p className="text-xs text-gray-400">This owner hasn&apos;t finished setting up payouts. Check back soon.</p>
+      </div>
+    );
+  }
+
   const isLoggedIn = !!userId;
 
   return (
@@ -163,7 +178,7 @@ export default function BookingCard({
       </button>
 
       <p className="text-xs text-gray-400 text-center">
-        No charges until pick-up is confirmed.
+        Your card is authorized now and only charged if the owner accepts.
       </p>
     </div>
   );

@@ -75,13 +75,13 @@ function SuccessContent() {
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">Rental ID</span>
-                <code className="text-xs font-mono bg-gray-50 text-[#27667B] px-2 py-1 rounded-lg border border-gray-100">
+                <code className="text-xs font-mono bg-gray-50 text-[#27667B] px-2 py-1 rounded-xl border border-gray-100">
                   {requestId ? requestId.slice(0, 8).toUpperCase() : "—"}
                 </code>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">Reference</span>
-                <code className="text-xs font-mono bg-gray-50 text-[#27667B] px-2 py-1 rounded-lg border border-gray-100">
+                <code className="text-xs font-mono bg-gray-50 text-[#27667B] px-2 py-1 rounded-xl border border-gray-100">
                   {ref}
                 </code>
               </div>

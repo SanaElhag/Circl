@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { createNotification } from "@/lib/notifications";
+import { computeAmounts } from "@/lib/pricing";
+import CheckoutPaymentForm from "./CheckoutPaymentForm";
 
 interface Listing {
   id: string;
@@ -32,6 +34,8 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [piError, setPiError] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -66,22 +70,35 @@ function CheckoutContent() {
           .eq("id", data.user_id)
           .single();
         setListing({ ...data, users: ownerData ?? null });
+
+        if (startDate && endDate) {
+          const res = await fetch("/api/stripe/create-payment-intent", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ listingId, startDate, endDate, note }),
+          });
+          const piData = await res.json();
+          if (!res.ok) {
+            setPiError(piData.error ?? "Couldn't set up payment for this listing.");
+          } else {
+            setClientSecret(piData.clientSecret);
+          }
+        }
       }
       setLoading(false);
     }
     init();
-  }, [listingId, startDate, endDate, router]);
+  }, [listingId, startDate, endDate, note, router]);
 
   function daysBetween(a: string, b: string) {
     return Math.max(1, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
   }
 
   const days = startDate && endDate ? daysBetween(startDate, endDate) : 0;
-  const subtotal = listing ? listing.price_per_day * days : 0;
-  const platformFee = subtotal * 0.15;
-  const gst = (subtotal + platformFee) * 0.05;
-  const pst = (subtotal + platformFee) * 0.07;
-  const total = subtotal + platformFee + gst + pst;
+  const { subtotal, platformFee, gst, pst, total } = computeAmounts(listing?.price_per_day ?? 0, days);
   const fmt = (n: number) => n.toFixed(2);
 
   function formatDate(d: string) {
@@ -90,7 +107,7 @@ function CheckoutContent() {
     });
   }
 
-  async function handleSendRequest() {
+  async function handleConfirmed(paymentIntentId: string) {
     if (!listing || !user || !startDate || !endDate) return;
     setSubmitting(true);
     setError(null);
@@ -113,6 +130,9 @@ function CheckoutContent() {
           start_date: startDate,
           end_date: endDate,
           requester_note: note || null,
+          stripe_payment_intent_id: paymentIntentId,
+          payment_status: "authorized",
+          amount_total_cents: Math.round(total * 100),
         })
         .select("id")
         .single();
@@ -277,19 +297,37 @@ function CheckoutContent() {
               <span className="font-bold text-xl text-[#143D60]">${fmt(total)}</span>
             </div>
 
-            <p className="text-xs text-gray-400 mt-2">All amounts in CAD. Payment is handled in-person upon pick-up.</p>
+            <p className="text-xs text-gray-400 mt-2">
+              All amounts in CAD. Your card is authorized now and only charged if the owner accepts.
+            </p>
 
             {error && (
               <div className="mt-4 bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>
             )}
 
-            <button
-              onClick={handleSendRequest}
-              disabled={submitting}
-              className="w-full mt-6 bg-[#DDEB9D] text-[#143D60] font-bold rounded-xl py-4 hover:bg-[#A0C878] transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-base"
-            >
-              {submitting ? "Sending Request..." : "Send Request"}
-            </button>
+            <div className="mt-6">
+              {submitting && (
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-gray-500">
+                  <div className="w-4 h-4 border-2 border-[#143D60] border-t-transparent rounded-full animate-spin" />
+                  Sending request...
+                </div>
+              )}
+
+              {!submitting && clientSecret && (
+                <CheckoutPaymentForm clientSecret={clientSecret} onConfirmed={handleConfirmed} disabled={submitting} />
+              )}
+
+              {!submitting && !clientSecret && piError && (
+                <div className="bg-yellow-50 text-yellow-700 text-sm rounded-xl px-4 py-3 border border-yellow-200">{piError}</div>
+              )}
+
+              {!submitting && !clientSecret && !piError && (
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-gray-400">
+                  <div className="w-4 h-4 border-2 border-[#143D60] border-t-transparent rounded-full animate-spin" />
+                  Preparing secure payment...
+                </div>
+              )}
+            </div>
 
             <Link href={`/gear/${listing.id}`} className="block text-center text-sm text-gray-400 hover:text-[#27667B] mt-4 transition-colors">
               Cancel and go back

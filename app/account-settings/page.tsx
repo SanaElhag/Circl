@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { passwordMeetsPolicy, firstUnmetRule } from "@/lib/password";
+import PasswordStrength from "@/app/components/PasswordStrength";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -186,7 +188,10 @@ export default function AccountSettingsPage() {
 
   async function handleSavePassword() {
     if (!newPassword) return showToast("Please enter a new password.", "error");
-    if (newPassword.length < 8) return showToast("Password must be at least 8 characters.", "error");
+    if (!passwordMeetsPolicy(newPassword)) {
+      const rule = firstUnmetRule(newPassword);
+      return showToast(rule ? `Password needs ${rule.label.toLowerCase()}.` : "Please choose a stronger password.", "error");
+    }
     if (newPassword !== confirmPassword) return showToast("Passwords don't match.", "error");
     setSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -318,7 +323,7 @@ export default function AccountSettingsPage() {
                       <button
                         onClick={handleSaveAvatar}
                         disabled={savingAvatar}
-                        className="text-xs font-bold bg-[#143D60] text-white px-3 py-1.5 rounded-lg hover:bg-[#27667B] transition-colors duration-200 disabled:opacity-50"
+                        className="text-xs font-bold bg-[#143D60] text-white px-3 py-1.5 rounded-xl hover:bg-[#27667B] transition-colors duration-200 disabled:opacity-50"
                       >
                         {savingAvatar ? "Saving…" : "Save photo"}
                       </button>
@@ -429,39 +434,11 @@ export default function AccountSettingsPage() {
                 />
               </div>
 
-              {/* Strength indicator */}
-              {newPassword && (
-                <div className="space-y-1.5">
-                  <div className="flex gap-1">
-                    {[
-                      newPassword.length >= 8,
-                      /[A-Z]/.test(newPassword),
-                      /[0-9]/.test(newPassword),
-                      /[^A-Za-z0-9]/.test(newPassword),
-                    ].map((met, i) => (
-                      <div
-                        key={i}
-                        className={`flex-1 h-1 rounded-full transition-colors duration-300 ${met ? "bg-[#A0C878]" : "bg-gray-100"}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-gray-400">
-                    {newPassword.length < 8
-                      ? "Too short"
-                      : !/[A-Z]/.test(newPassword)
-                      ? "Add an uppercase letter"
-                      : !/[0-9]/.test(newPassword)
-                      ? "Add a number"
-                      : !/[^A-Za-z0-9]/.test(newPassword)
-                      ? "Add a symbol for a stronger password"
-                      : "Strong password ✓"}
-                  </p>
-                </div>
-              )}
+              <PasswordStrength password={newPassword} />
 
               <button
                 onClick={handleSavePassword}
-                disabled={savingPassword || !newPassword || !confirmPassword}
+                disabled={savingPassword || !newPassword || !confirmPassword || !passwordMeetsPolicy(newPassword)}
                 className="w-full bg-[#143D60] text-white font-bold py-3 rounded-xl text-sm hover:bg-[#27667B] transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed mt-1"
               >
                 {savingPassword ? "Changing password…" : "Change password"}

@@ -101,9 +101,18 @@ function RequestCard({ request, onStatusChange }: {
 
   async function updateStatus(status: "accepted" | "declined") {
     setSaving(true);
-    await supabase.from("requests")
-      .update({ status, owner_comment: comment.trim() || null })
-      .eq("id", request.id);
+    const action = status === "accepted" ? "accept" : "decline";
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setSaving(false); return; }
+
+    const res = await fetch(`/api/requests/${request.id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) { setSaving(false); return; }
+
+    await supabase.from("requests").update({ owner_comment: comment.trim() || null }).eq("id", request.id);
     onStatusChange(request.id, status);
     setSaving(false);
   }
@@ -212,15 +221,19 @@ type OwnerTab = "summary" | "requests" | "listings";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function OwnerDashboard({ listings, requests, ownerRatings }: {
+export default function OwnerDashboard({ listings, requests, ownerRatings, stripeChargesEnabled }: {
   listings: OwnerListing[];
   requests: OwnerRequest[];
   ownerRatings: OwnerRating[];
   userId: string;
+  stripeChargesEnabled: boolean;
 }) {
   const [tab,         setTab]         = useState<OwnerTab>("summary");
   const [requestList, setRequestList] = useState<OwnerRequest[]>(requests);
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
+  // Stripe Connect isn't live yet (see the "Coming soon" banner below) — the
+  // working /api/stripe/connect flow that used to live here moved to
+  // list-your-gear/ConnectButton.tsx's comment for when it's ready.
 
   const accepted        = requestList.filter((r) => r.status === "accepted");
   const pendingCount    = requestList.filter((r) => r.status === "pending").length;
@@ -411,11 +424,11 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
 
                   <div className="flex items-center gap-2 mt-3">
                     <Link href={`/edit-gear/${l.id}`}
-                      className="text-xs font-semibold border border-[#143D60] text-[#143D60] px-3 py-1.5 rounded-lg hover:bg-[#143D60] hover:text-white transition-all duration-200">
+                      className="text-xs font-semibold border border-[#143D60] text-[#143D60] px-3 py-1.5 rounded-xl hover:bg-[#143D60] hover:text-white transition-all duration-200">
                       Edit
                     </Link>
                     <button onClick={() => removeListing(l.id)}
-                      className="text-xs font-semibold border border-red-200 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all duration-200">
+                      className="text-xs font-semibold border border-red-200 text-red-500 px-3 py-1.5 rounded-xl hover:bg-red-50 transition-all duration-200">
                       Remove
                     </button>
                   </div>
@@ -429,6 +442,29 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
       {/* ── Summary tab ── */}
       {tab === "summary" && (
         <div className="space-y-6">
+          {/* Payouts status */}
+          {stripeChargesEnabled ? (
+            <div className="rounded-2xl bg-[#F0F7F4] border border-[#A0C878] p-5 flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27667B] shrink-0" />
+              <p className="text-sm font-semibold text-[#27667B]">Payouts are active — accepted rentals pay out automatically.</p>
+            </div>
+          ) : (
+            // Matches the "Coming soon" framing on /list-your-gear — Stripe payouts
+            // aren't live yet, so this doesn't offer a "Set up payouts" action that
+            // would just fail against an unconfigured Stripe account.
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-amber-800">Automatic payouts are coming soon</p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Until then, agree on payment with your renter directly when you accept a request.
+                </p>
+              </div>
+              <div className="shrink-0 bg-gray-100 text-gray-400 font-bold px-4 py-2.5 rounded-xl text-sm cursor-not-allowed">
+                Coming soon
+              </div>
+            </div>
+          )}
+
           {/* Stats — unified card with internal dividers */}
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div className="grid grid-cols-2 lg:grid-cols-4">
@@ -453,8 +489,8 @@ export default function OwnerDashboard({ listings, requests, ownerRatings }: {
             </div>
             <EarningsChart monthlyData={monthlyEarnings.map((v) => Math.round(v))} />
             <div className="flex items-center gap-5 mt-5 text-[11px] text-gray-400">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#DDEB9D] inline-block" /> Earnings</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#143D60] inline-block" /> This month</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-[#DDEB9D] inline-block" /> Earnings</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-[#143D60] inline-block" /> This month</span>
             </div>
           </div>
 
