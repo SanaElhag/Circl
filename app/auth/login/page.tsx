@@ -1,21 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAuthUser } from "@/lib/useAuthUser";
 import { Suspense } from "react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/dashboard";
+  const user = useAuthUser();
 
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error,        setError]        = useState<string | null>(null);
   const [loading,      setLoading]      = useState(false);
+
+  // Already signed in — there's nothing to do on this page but leave.
+  useEffect(() => {
+    if (user) router.replace(redirect);
+  }, [user, redirect, router]);
+
+  if (user === undefined || user) {
+    return <div className="min-h-screen bg-[#F9FAFB]" />;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
