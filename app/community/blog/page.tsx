@@ -1,11 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import Image from "next/image";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabasePublic } from "@/lib/supabasePublic";
 
 interface BlogPost {
   id: string;
@@ -41,6 +36,7 @@ const PLACEHOLDER =
   "https://www.panoramaresort.com/assets/Tourism-Operators/images/pano-aug14-hike-yoga-lessons-29-2000__FocusFillWyIwLjAwIiwiMC4wMCIsMTgwMCwxMDgwXQ.jpg";
 
 export default async function BlogIndexPage() {
+  const supabase = supabasePublic();
   const { data: posts } = await supabase
     .from("blog_posts")
     .select(`

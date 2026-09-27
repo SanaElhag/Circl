@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { Skeleton } from "@/app/components/Skeleton";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +33,6 @@ const CONDITION_COLORS: Record<string, string> = {
 interface ProfileUser {
   id: string;
   full_name: string;
-  email: string;
   created_at: string;
 }
 
@@ -107,7 +107,7 @@ export default function ProfilePage() {
       // Profile user
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, full_name, email, created_at")
+        .select("id, full_name, created_at")
         .eq("id", profileId)
         .single();
 
@@ -163,8 +163,40 @@ export default function ProfilePage() {
 
   if (loading || currentUser === undefined) {
     return (
-      <main className="min-h-screen bg-[#F9FAFB] pt-24 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#143D60] border-t-transparent animate-spin" />
+      <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <Skeleton className="h-4 w-28 mb-6" />
+
+          {/* Profile header skeleton */}
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
+            <Skeleton className="h-2 rounded-none" />
+            <div className="p-6 sm:p-8 flex items-center gap-5">
+              <Skeleton className="w-20 h-20 rounded-full shrink-0" />
+              <div className="flex-1 space-y-3">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-3.5 w-56" />
+                <div className="flex gap-5 pt-1">
+                  <Skeleton className="h-8 w-14" />
+                  <Skeleton className="h-8 w-14" />
+                  <Skeleton className="h-8 w-14" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Listings grid skeleton */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                <Skeleton className="aspect-[4/3] rounded-none" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-3.5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     );
   }

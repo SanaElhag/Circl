@@ -1,5 +1,5 @@
 export const LAST_UPDATED = "April 6, 2026";
-export const CONTACT_EMAIL = "info@circl.ca";
+export const CONTACT_EMAIL = "circl@gmail.com";
 
 export const PREAMBLE =
   "The short version: Cancel before the owner responds — no charge. Cancel after acceptance with 48+ hours notice — rental amount refunded minus the platform fee. Cancel within 48 hours — 50% refund. Once the rental is active, no refund is available. Owners who cancel accepted bookings must give renters a full refund.";

@@ -1,6 +1,6 @@
 export const LAST_UPDATED = "May 9, 2026";
 export const COMPANY_NAME = "Circl";
-export const CONTACT_EMAIL = "privacy@circl.ca";
+export const CONTACT_EMAIL = "circl@gmail.com";
 
 export const PREAMBLE =
   "Your privacy matters to us. This Policy explains what personal information we collect, why we collect it, and how you can control it. We comply with Canada's federal privacy law (PIPEDA) and British Columbia's Personal Information Protection Act (PIPA).";
@@ -145,22 +145,11 @@ export const sections = [
   },
   {
     id: "cookies",
-    title: "8. Cookies & Tracking Technologies",
+    title: "8. Cookies & Local Storage",
     paragraphs: [
-      "We use cookies and similar technologies to operate and improve the Platform. Cookies are small text files stored on your device. We use:",
+      "We don't currently use tracking or analytics cookies. Staying signed in is handled with your browser's local storage rather than a cookie, and it's required for the Platform to function.",
+      "See our Cookie Policy (linked in the footer) for the full, current picture — we'll update it, and ask again, before adding anything like analytics.",
     ],
-    subsections: [
-      {
-        heading: "Essential cookies",
-        body: "Required for the Platform to function, including authentication session cookies. These cannot be disabled.",
-      },
-      {
-        heading: "Analytics cookies",
-        body: "Help us understand how users interact with the Platform so we can improve it. You may opt out of analytics tracking.",
-      },
-    ],
-    footer:
-      "You can control cookies through your browser settings. Disabling essential cookies may prevent you from using certain features of the Platform.",
   },
   {
     id: "third-party",

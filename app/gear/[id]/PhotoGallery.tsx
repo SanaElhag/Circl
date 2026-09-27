@@ -47,7 +47,7 @@ export default function PhotoGallery({ photos, title }: { photos: Photo[]; title
           {photos.length} photo{photos.length !== 1 ? "s" : ""}
         </span>
         {/* Expand hint */}
-        <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm rounded-xl px-2 py-1 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
           </svg>
@@ -119,7 +119,7 @@ export default function PhotoGallery({ photos, title }: { photos: Photo[]; title
             <img
               src={photos[lightboxIndex].url}
               alt={`${title} — photo ${lightboxIndex + 1}`}
-              className="w-full h-full object-contain max-h-[85vh] rounded-lg"
+              className="w-full h-full object-contain max-h-[85vh] rounded-xl"
             />
           </div>
 
@@ -142,7 +142,7 @@ export default function PhotoGallery({ photos, title }: { photos: Photo[]; title
                 <button
                   key={img.id}
                   onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                  className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200 flex-shrink-0 ${
+                  className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all duration-200 flex-shrink-0 ${
                     i === lightboxIndex ? "border-[#DDEB9D] opacity-100" : "border-transparent opacity-50 hover:opacity-80"
                   }`}
                 >

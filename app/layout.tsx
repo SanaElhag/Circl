@@ -4,6 +4,7 @@ import "./globals.css";
 import TopNav from "./components/TopNav";
 import Footer from "./components/Footer";
 import MobileBottomNav from "./components/MobileBottomNav";
+import CookieConsent from "./components/CookieConsent";
 
 
 const dmSans = DM_Sans({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="min-h-screen">{children}</main>
         <Footer />
         <MobileBottomNav />
+        <CookieConsent />
       </body>
     </html>
   );

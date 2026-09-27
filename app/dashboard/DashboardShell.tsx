@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import BorrowerDashboard from "./BorrowerDashboard";
 import OwnerDashboard from "./OwnerDashboard";
+import { Skeleton } from "@/app/components/Skeleton";
 import {
   normaliseBorrowerRequest,
   normaliseOwnerRequest,
@@ -28,6 +29,7 @@ interface DashboardData {
   listings: OwnerListing[];
   ownerRequests: OwnerRequest[];
   ownerRatings: OwnerRating[];
+  stripeChargesEnabled: boolean;
 }
 
 export default function DashboardShell() {
@@ -55,6 +57,7 @@ export default function DashboardShell() {
         { data: submittedRatings },
         { data: listings },
         { data: ownerRatings },
+        { data: userRow },
       ] = await Promise.all([
         supabase
           .from("requests")
@@ -83,7 +86,29 @@ export default function DashboardShell() {
           .from("ratings")
           .select("owner_rating")
           .eq("ratee_id", uid),
+
+        supabase
+          .from("users")
+          .select("stripe_charges_enabled")
+          .eq("id", uid)
+          .single(),
       ]);
+
+      let stripeChargesEnabled = !!userRow?.stripe_charges_enabled;
+
+      // Returning from Stripe Connect onboarding — force a fresh status check
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("stripe") === "return") {
+        const res = await fetch("/api/stripe/connect/status", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const statusData = await res.json();
+          stripeChargesEnabled = !!statusData.chargesEnabled;
+        }
+        setMode("owner");
+        router.replace("/dashboard");
+      }
 
       const ownerListings: OwnerListing[] = listings ?? [];
       const listingIds = ownerListings.map((l) => l.id);
@@ -107,6 +132,7 @@ export default function DashboardShell() {
         listings:         ownerListings,
         ownerRequests:    (rawOwnerRequests ?? []).map((r) => normaliseOwnerRequest(r as RawOwnerRequest)),
         ownerRatings:     (ownerRatings ?? []) as OwnerRating[],
+        stripeChargesEnabled,
       });
       setLoading(false);
     }
@@ -116,8 +142,27 @@ export default function DashboardShell() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#F9FAFB] pt-24 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#143D60] border-t-transparent animate-spin" />
+      <main className="min-h-screen bg-[#F9FAFB] pt-24 pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="mb-10 space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-56" />
+          </div>
+          <div className="flex gap-7 border-b border-gray-100 mb-8 pb-3">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20" />
+            ))}
+          </div>
+        </div>
       </main>
     );
   }
@@ -179,6 +224,7 @@ export default function DashboardShell() {
             requests={data.ownerRequests}
             ownerRatings={data.ownerRatings}
             userId={data.userId}
+            stripeChargesEnabled={data.stripeChargesEnabled}
           />
         )}
       </div>

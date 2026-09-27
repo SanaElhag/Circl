@@ -1,14 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BookingCard from "./BookingCard";
 import EditButton from "./EditButton";
 import PhotoGallery from "./PhotoGallery";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabasePublic } from "@/lib/supabasePublic";
 
 const CONDITION_COLORS: Record<string, string> = {
   New:        "bg-[#DDEB9D] text-[#143D60]",
@@ -30,6 +25,7 @@ export default async function GearDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const supabase = supabasePublic();
 
   const { data: listing, error } = await supabase
     .from("listings")
@@ -39,16 +35,24 @@ export default async function GearDetailPage({
 
   if (error || !listing) notFound();
 
-  const [{ data: ownerData }, { data: categoryData }, { data: listingImages }] = await Promise.all([
-    supabase.from("users").select("full_name, email").eq("id", listing.user_id).single(),
+  const [{ data: ownerData }, { data: categoryData }, { data: listingImages }, { data: ratingRows }] = await Promise.all([
+    supabase.from("users").select("full_name, stripe_charges_enabled").eq("id", listing.user_id).single(),
     supabase.from("categories").select("name").eq("slug", listing.category).single(),
     supabase.from("listings_images").select("id, url, position").eq("listing_id", id).order("position"),
+    // Computed live from actual reviews rather than read off a `rating` column
+    // on the listing — that column is never written back to, so it would
+    // freeze at whatever it was seeded with and ignore every real review.
+    supabase.from("ratings").select("gear_rating").eq("listing_id", id).not("gear_rating", "is", null),
   ]);
 
-  const owner = ownerData as { full_name: string; email: string } | null;
+  const owner = ownerData as { full_name: string; stripe_charges_enabled: boolean } | null;
   const ownerInitial = owner?.full_name?.[0]?.toUpperCase() ?? "C";
   const conditionClass = CONDITION_COLORS[listing.condition] ?? "bg-gray-100 text-gray-700";
-  const rating: number | null = listing.rating ?? null;
+  const gearRatings = (ratingRows ?? []) as { gear_rating: number }[];
+  const reviewCount = gearRatings.length;
+  const rating: number | null = reviewCount > 0
+    ? gearRatings.reduce((sum, r) => sum + r.gear_rating, 0) / reviewCount
+    : null;
   const categoryLabel = (categoryData as { name: string } | null)?.name ?? listing.category;
 
   // Sort listings_images by position; fall back to image_url if none
@@ -120,7 +124,9 @@ export default async function GearDetailPage({
                     })}
                   </div>
                   <span className="text-sm font-bold text-[#143D60]">{rating.toFixed(1)}</span>
-                  <span className="text-sm text-gray-400">/ 5</span>
+                  <span className="text-sm text-gray-400">
+                    / 5 · {reviewCount} review{reviewCount !== 1 ? "s" : ""}
+                  </span>
                 </div>
               )}
             </div>
@@ -201,6 +207,7 @@ export default async function GearDetailPage({
               available={listing.available}
               availableFrom={listing.available_from ?? null}
               availableUntil={listing.available_until ?? null}
+              ownerStripeEnabled={owner?.stripe_charges_enabled ?? false}
             />
           </div>
 

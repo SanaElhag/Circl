@@ -1,0 +1,31 @@
+-- Run by hand in the Supabase SQL editor (project has no migration tooling).
+--
+-- WHY: `public.users` is readable by the `anon` role, and the anon key ships
+-- inside the browser bundle. Anyone can therefore dump every member's email
+-- address with a single request:
+--
+--   curl "https://<project>.supabase.co/rest/v1/users?select=email" \
+--        -H "apikey: <anon key from the page source>"
+--
+-- Verified against the live project on 2026-09-27: it returned every row.
+-- Row-level policies can't fix this on their own (RLS filters rows, not
+-- columns), so revoke the column privilege instead — PostgREST honours it.
+--
+-- Nothing in the public UI renders an owner's email; the two pages that were
+-- selecting it (gear/[id] and profile/[id]) have been changed to stop.
+
+revoke select (email) on public.users from anon;
+
+-- Signed-in members keep access, because the admin panel searches and lists
+-- users by email. That still means any student who signs up can read every
+-- other member's address. To close that too, move the admin panel's user
+-- queries to a server route using the service-role key and then also run:
+--
+--   revoke select (email) on public.users from authenticated;
+--
+-- Check the result (run as anon in the SQL editor's role switcher, or just
+-- re-run the curl above — it should now 403 on the email column):
+--
+--   select grantee, privilege_type, column_name
+--   from information_schema.column_privileges
+--   where table_name = 'users' and column_name = 'email';

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import { createNotification } from "@/lib/notifications";
+import { computeAmounts } from "@/lib/pricing";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,10 +68,6 @@ function fmtTime(d: string) {
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
-
-const PLATFORM_FEE = 0.15;
-const GST = 0.05;
-const PST = 0.07;
 
 const STATUS_META: Record<RequestStatus, { label: string; color: string; description: string }> = {
   pending:   { label: "Pending",    color: "bg-yellow-50 text-yellow-700 border-yellow-200",   description: "Waiting for the owner to respond" },
@@ -485,11 +482,11 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
           {isImageUrl(pendingFile.name) ? (
             <div className="relative inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={pendingPreview} alt="preview" className="h-16 w-16 rounded-lg object-cover border border-gray-200" />
+              <img src={pendingPreview} alt="preview" className="h-16 w-16 rounded-xl object-cover border border-gray-200" />
               <button onClick={clearPending} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-800 text-white rounded-full text-xs flex items-center justify-center leading-none">×</button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 text-sm text-gray-700 w-fit">
+            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 text-sm text-gray-700 w-fit">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               <span className="truncate max-w-50">{pendingFile.name}</span>
               <button onClick={clearPending} className="text-gray-400 hover:text-gray-700 ml-1">×</button>
@@ -504,7 +501,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
         <button
           onClick={() => fileRef.current?.click()}
           title="Attach file"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#143D60] hover:bg-gray-100 transition-colors duration-200 shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-[#143D60] hover:bg-gray-100 transition-colors duration-200 shrink-0"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -533,12 +530,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
 // ─── Price breakdown card (borrower view) ────────────────────────────────────
 
 function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: number }) {
-  const subtotal    = pricePerDay * days;
-  const platformFee = subtotal * PLATFORM_FEE;
-  const taxable     = subtotal + platformFee;
-  const gst         = taxable * GST;
-  const pst         = taxable * PST;
-  const total       = taxable + gst + pst;
+  const { subtotal, platformFee, gst, pst, total } = computeAmounts(pricePerDay, days);
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-3">
@@ -568,9 +560,11 @@ function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: numb
 // ─── Earnings card (owner view) ───────────────────────────────────────────────
 
 function OwnerEarningsCard({ pricePerDay, days }: { pricePerDay: number; days: number }) {
-  const subtotal    = pricePerDay * days;
-  const platformFee = subtotal * PLATFORM_FEE;
-  const earnings    = subtotal - platformFee;
+  // The renter pays the platform fee and taxes on top of the listing price —
+  // Stripe's application_fee_amount takes exactly that from the charge before
+  // transferring the rest, so the owner's payout is the full subtotal below,
+  // not subtotal minus the fee. (See computeAmounts + create-payment-intent.)
+  const { subtotal } = computeAmounts(pricePerDay, days);
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-3">
@@ -580,14 +574,13 @@ function OwnerEarningsCard({ pricePerDay, days }: { pricePerDay: number; days: n
           <span>${pricePerDay} × {days} day{days !== 1 ? "s" : ""}</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-sm text-gray-400">
-          <span>Platform fee (15%)</span>
-          <span>${platformFee.toFixed(2)}</span>
-        </div>
+        <p className="text-xs text-gray-400">
+          The platform fee and taxes are paid by the renter on top of this — you keep 100% of your listing price.
+        </p>
         <div className="h-px bg-gray-100" />
         <div className="flex justify-between items-baseline">
           <span className="font-bold text-[#143D60]">You earn</span>
-          <span className="text-xl font-bold text-[#27667B]">${earnings.toFixed(2)}</span>
+          <span className="text-xl font-bold text-[#27667B]">${subtotal.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -675,20 +668,23 @@ export default function RequestView({
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  async function updateStatus(newStatus: RequestStatus) {
-    setActionLoading(newStatus);
-    const { data } = await supabase
-      .from("requests")
-      .update({ status: newStatus })
-      .eq("id", request!.id)
-      .select()
-      .single();
-    if (data) setRequest((prev) => ({ ...prev!, status: newStatus } as RawRequest));
+  async function updateStatus(action: "accept" | "decline" | "cancel", loadingLabel: RequestStatus) {
+    setActionLoading(loadingLabel);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setActionLoading(null); return; }
+
+    const res = await fetch(`/api/requests/${request!.id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action }),
+    });
+    const data = await res.json();
+    if (res.ok) setRequest((prev) => ({ ...prev!, status: data.status } as RawRequest));
     setActionLoading(null);
   }
 
-  async function handleOwnerAccept() { await updateStatus("accepted"); }
-  async function handleOwnerDecline() { await updateStatus("declined"); }
+  async function handleOwnerAccept() { await updateStatus("accept", "accepted"); }
+  async function handleOwnerDecline() { await updateStatus("decline", "declined"); }
 
   async function handleOwnerDelivered() {
     setActionLoading("delivered");
@@ -724,7 +720,7 @@ export default function RequestView({
 
   async function handleCancel() {
     if (!confirm("Cancel this request?")) return;
-    await updateStatus("cancelled");
+    await updateStatus("cancel", "cancelled");
   }
 
   async function handleEditSave(startDate: string, endDate: string, note: string) {
@@ -742,7 +738,17 @@ export default function RequestView({
     setShowEditModal(false);
   }
 
-  async function handleMarkCompleted() { await updateStatus("completed"); }
+  async function handleMarkCompleted() {
+    setActionLoading("completed");
+    const { data } = await supabase
+      .from("requests")
+      .update({ status: "completed" })
+      .eq("id", request!.id)
+      .select()
+      .single();
+    if (data) setRequest((prev) => ({ ...prev!, status: "completed" } as RawRequest));
+    setActionLoading(null);
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

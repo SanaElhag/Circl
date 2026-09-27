@@ -214,7 +214,7 @@ function NewsEditorContent() {
                 <Image src={imagePreview} alt="Preview" fill className="object-cover" />
                 <button
                   onClick={() => { setImageFile(null); setExistingImageUrl(null); }}
-                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
                 >
                   Remove
                 </button>
