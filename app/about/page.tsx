@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import AuthAwareCTA from "../components/AuthAwareCTA";
 import {
   HERO_IMAGE, STORY_IMAGE,
   HERO, PROBLEM, VALUES_SECTION, values,
@@ -29,9 +30,13 @@ export default function AboutPage() {
       <h1 className="text-[clamp(40px,5vw,68px)] font-bold text-[#143D60] leading-[1.05] tracking-tight mb-7">{HERO.heading}</h1>
       <p className="text-[17px] text-[#6B5E4E] max-w-md leading-relaxed mb-10">{HERO.subheading}</p>
       <div className="flex gap-3 flex-wrap">
-        <Link href="/auth/register" className="rounded-full bg-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-white hover:bg-[#27667B] transition-colors duration-200">
-          Join Circl
-        </Link>
+        <AuthAwareCTA
+          signedOutHref="/auth/register"
+          signedOutLabel="Join Circl"
+          signedInHref="/dashboard"
+          signedInLabel="Go to Dashboard"
+          className="rounded-full bg-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-white hover:bg-[#27667B] transition-colors duration-200"
+        />
         <Link href="/browse" className="rounded-full border border-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-[#143D60] hover:bg-[#143D60] hover:text-white transition-all duration-200">
           Browse Gear
         </Link>
@@ -227,10 +232,13 @@ export default function AboutPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight mb-6">{CTA.heading}</h2>
           <p className="text-white/60 text-lg leading-relaxed max-w-xl mx-auto mb-12">{CTA.subheading}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register"
-              className="rounded-xl bg-[#DDEB9D] px-8 py-4 text-sm font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200">
-              {CTA.primaryButton}
-            </Link>
+            <AuthAwareCTA
+              signedOutHref="/auth/register"
+              signedOutLabel={CTA.primaryButton}
+              signedInHref="/list-your-gear"
+              signedInLabel="List your gear"
+              className="rounded-xl bg-[#DDEB9D] px-8 py-4 text-sm font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
+            />
             <Link href="/browse"
               className="rounded-xl border border-white/20 px-8 py-4 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200">
               {CTA.secondaryButton}

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAuthUser } from "@/lib/useAuthUser";
 import { passwordMeetsPolicy, firstUnmetRule } from "@/lib/password";
 import PasswordStrength from "@/app/components/PasswordStrength";
 
@@ -27,6 +29,9 @@ function validate(fullName: string, email: string, password: string, confirmPass
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const user = useAuthUser();
+
   const [fullName,        setFullName]        = useState("");
   const [email,           setEmail]           = useState("");
   const [password,        setPassword]        = useState("");
@@ -35,6 +40,18 @@ export default function RegisterPage() {
   const [error,           setError]           = useState<string | null>(null);
   const [loading,         setLoading]         = useState(false);
   const [submitted,       setSubmitted]       = useState(false);
+
+  // Already signed in — nothing to register, send them to their dashboard.
+  // Doesn't fire once `submitted` is showing: right after signup there's no
+  // session yet (email confirmation happens first), so this never races the
+  // "check your inbox" screen.
+  useEffect(() => {
+    if (user && !submitted) router.replace("/dashboard");
+  }, [user, submitted, router]);
+
+  if (!submitted && (user === undefined || user)) {
+    return <div className="min-h-screen bg-[#F9FAFB]" />;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabasePublic } from "@/lib/supabasePublic";
 import NewsletterForm from "./components/NewsletterForm";
+import AuthAwareCTA from "./components/AuthAwareCTA";
 
 const HERO_IMAGE   = "/images/hero.jpg";
 const TRUST_IMAGE  = "/images/trust.jpg";
@@ -171,12 +172,13 @@ export default async function HomePage() {
               >
                 {heroSlide?.cta_text ?? "Browse Gear"}
               </Link>
-              <Link
-                href="/auth/register"
+              <AuthAwareCTA
+                signedOutHref="/auth/register"
+                signedOutLabel="Create an Account →"
+                signedInHref="/list-your-gear"
+                signedInLabel="List Your Gear →"
                 className="text-[15px] font-semibold text-white hover:text-[#DDEB9D] transition-colors duration-200 flex items-center gap-1.5"
-              >
-                Create an Account →
-              </Link>
+              />
             </div>
           </div>
         </div>
@@ -298,12 +300,13 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-10 flex justify-center">
-            <Link
-              href="/auth/register"
+            <AuthAwareCTA
+              signedOutHref="/auth/register"
+              signedOutLabel="Get started for free"
+              signedInHref="/dashboard"
+              signedInLabel="Go to your dashboard →"
               className="rounded-full bg-[#143D60] px-8 py-4 text-[13px] font-semibold text-white hover:bg-[#27667B] transition-colors duration-200"
-            >
-              Get started for free
-            </Link>
+            />
           </div>
         </div>
       </section>
@@ -330,12 +333,13 @@ export default async function HomePage() {
                 </p>
               </div>
               <div className="shrink-0">
-                <Link
-                  href="/auth/register"
+                <AuthAwareCTA
+                  signedOutHref="/auth/register"
+                  signedOutLabel="Claim Offer →"
+                  signedInHref="/browse"
+                  signedInLabel="Browse Gear →"
                   className="inline-flex items-center gap-2 rounded-full bg-[#DDEB9D] px-10 py-4 text-[13px] font-bold text-[#143D60] hover:bg-[#A0C878] transition-colors duration-200"
-                >
-                  Claim Offer →
-                </Link>
+                />
               </div>
             </div>
           </div>
