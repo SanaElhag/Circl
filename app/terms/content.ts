@@ -170,7 +170,7 @@ export const sections = [
     paragraphs: ["If you have any questions about these Terms, please contact us at:"],
     address: {
       name: COMPANY_NAME,
-      location: "Vancouver, British Columbia, Canada",
+      location: "British Columbia, Canada",
       email: CONTACT_EMAIL,
     },
   },
