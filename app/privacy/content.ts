@@ -88,7 +88,7 @@ export const sections = [
       },
       {
         heading: "Service Providers",
-        body: "We work with trusted third-party providers to operate the Platform, including cloud hosting (Supabase), payment processing, and analytics. These providers are contractually bound to protect your information and may only use it to perform services on our behalf.",
+        body: "We work with trusted third-party providers to operate the Platform, including cloud hosting (Supabase) and payment processing (Stripe). These providers are contractually bound to protect your information and may only use it to perform services on our behalf. We don't currently use any analytics provider — see Section 8.",
       },
       {
         heading: "Legal Authorities",
@@ -193,7 +193,7 @@ export const sections = [
     ],
     address: {
       name: `${COMPANY_NAME} — Privacy Officer`,
-      location: "Vancouver, British Columbia, Canada",
+      location: "British Columbia, Canada",
       email: CONTACT_EMAIL,
     },
     footer: `If you are not satisfied with our response, you may contact the Office of the Privacy Commissioner of Canada (https://www.priv.gc.ca) or the Office of the Information & Privacy Commissioner for BC (https://www.oipc.bc.ca).`,
