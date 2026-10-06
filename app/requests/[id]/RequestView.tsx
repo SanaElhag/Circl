@@ -31,6 +31,7 @@ interface Listing {
 interface RawRequest {
   id: string;
   status: RequestStatus;
+  payment_status: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -529,28 +530,43 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
 
 // ─── Price breakdown card (borrower view) ────────────────────────────────────
 
-function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: number }) {
+function PriceBreakdown({ pricePerDay, days, paymentStatus }: { pricePerDay: number; days: number; paymentStatus: string | null }) {
   const { subtotal, platformFee, gst, pst, total } = computeAmounts(pricePerDay, days);
+  // "unpaid" means this request never went through Stripe — online payment
+  // wasn't available for this listing at booking time, so no fee/tax is
+  // actually being collected. Showing the fee breakdown here would claim an
+  // amount that was never agreed to or charged.
+  const paid = paymentStatus !== "unpaid" && paymentStatus !== null;
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-3">
-      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">Price Breakdown</p>
+      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">
+        {paid ? "Price Breakdown" : "Estimated Cost"}
+      </p>
       <div className="space-y-2">
-        {[
-          { label: `$${pricePerDay} × ${days} day${days !== 1 ? "s" : ""}`, value: subtotal },
-          { label: "Platform fee (15%)",  value: platformFee },
-          { label: "GST (5%)",            value: gst },
-          { label: "PST (7%)",            value: pst },
-        ].map(({ label, value }) => (
+        {(paid
+          ? [
+              { label: `$${pricePerDay} × ${days} day${days !== 1 ? "s" : ""}`, value: subtotal },
+              { label: "Platform fee (15%)",  value: platformFee },
+              { label: "GST (5%)",            value: gst },
+              { label: "PST (7%)",            value: pst },
+            ]
+          : [{ label: `$${pricePerDay} × ${days} day${days !== 1 ? "s" : ""}`, value: subtotal }]
+        ).map(({ label, value }) => (
           <div key={label} className="flex justify-between text-sm text-gray-500">
             <span>{label}</span>
             <span>${value.toFixed(2)}</span>
           </div>
         ))}
+        {!paid && (
+          <p className="text-xs text-gray-400">
+            Online payment isn&apos;t set up for this listing — arrange payment with the owner directly.
+          </p>
+        )}
         <div className="h-px bg-gray-100" />
         <div className="flex justify-between font-bold text-[#143D60]">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{paid ? "Total" : "Estimated total"}</span>
+          <span>${(paid ? total : subtotal).toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -559,27 +575,36 @@ function PriceBreakdown({ pricePerDay, days }: { pricePerDay: number; days: numb
 
 // ─── Earnings card (owner view) ───────────────────────────────────────────────
 
-function OwnerEarningsCard({ pricePerDay, days }: { pricePerDay: number; days: number }) {
+function OwnerEarningsCard({ pricePerDay, days, paymentStatus }: { pricePerDay: number; days: number; paymentStatus: string | null }) {
   // The renter pays the platform fee and taxes on top of the listing price —
   // Stripe's application_fee_amount takes exactly that from the charge before
   // transferring the rest, so the owner's payout is the full subtotal below,
   // not subtotal minus the fee. (See computeAmounts + create-payment-intent.)
+  //
+  // "unpaid" means this one went through without Stripe (not available for
+  // this listing at booking time) — nothing is being collected or paid out
+  // through the platform at all, so the note below says that instead.
   const { subtotal } = computeAmounts(pricePerDay, days);
+  const paid = paymentStatus !== "unpaid" && paymentStatus !== null;
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-3">
-      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">Your Earnings</p>
+      <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">
+        {paid ? "Your Earnings" : "Agreed Amount"}
+      </p>
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-gray-500">
           <span>${pricePerDay} × {days} day{days !== 1 ? "s" : ""}</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
         <p className="text-xs text-gray-400">
-          The platform fee and taxes are paid by the renter on top of this — you keep 100% of your listing price.
+          {paid
+            ? "The platform fee and taxes are paid by the renter on top of this — you keep 100% of your listing price."
+            : "Online payment isn't set up for this listing — collect this directly from the renter."}
         </p>
         <div className="h-px bg-gray-100" />
         <div className="flex justify-between items-baseline">
-          <span className="font-bold text-[#143D60]">You earn</span>
+          <span className="font-bold text-[#143D60]">{paid ? "You earn" : "You collect"}</span>
           <span className="text-xl font-bold text-[#27667B]">${subtotal.toFixed(2)}</span>
         </div>
       </div>
@@ -611,7 +636,7 @@ export default function RequestView({
       const { data: requestData, error } = await supabase
         .from("requests")
         .select(`
-          id, status, start_date, end_date, created_at,
+          id, status, payment_status, start_date, end_date, created_at,
           owner_comment, requester_note,
           owner_delivered, requester_received, received_photos,
           listings (
@@ -890,8 +915,8 @@ export default function RequestView({
             {/* Price breakdown / earnings */}
             {days > 0 && listing && (
               isOwner
-                ? <OwnerEarningsCard pricePerDay={listing.price_per_day} days={days} />
-                : <PriceBreakdown pricePerDay={listing.price_per_day} days={days} />
+                ? <OwnerEarningsCard pricePerDay={listing.price_per_day} days={days} paymentStatus={request.payment_status} />
+                : <PriceBreakdown pricePerDay={listing.price_per_day} days={days} paymentStatus={request.payment_status} />
             )}
 
             {/* ── OWNER ACTIONS ── */}
