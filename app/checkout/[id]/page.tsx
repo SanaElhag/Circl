@@ -37,8 +37,10 @@ function CheckoutContent() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   // "unavailable" covers any reason payment can't happen right now (stripe not
   // set up, owner hasn't finished onboarding, etc) - either way we just send
-  // the request and let them sort out payment directly
-  const [paymentState, setPaymentState] = useState<"checking" | "ready" | "unavailable">("checking");
+  // the request and let them sort out payment directly. "rate_limited" is its
+  // own state so someone going too fast sees that, not a confusing switch to
+  // the pay-directly flow
+  const [paymentState, setPaymentState] = useState<"checking" | "ready" | "unavailable" | "rate_limited">("checking");
 
   useEffect(() => {
     async function init() {
@@ -88,6 +90,8 @@ function CheckoutContent() {
               const piData = await res.json();
               setClientSecret(piData.clientSecret);
               setPaymentState("ready");
+            } else if (res.status === 429) {
+              setPaymentState("rate_limited");
             } else {
               setPaymentState("unavailable");
             }
@@ -301,10 +305,10 @@ function CheckoutContent() {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sticky top-24">
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-4">
-              {paymentState === "unavailable" ? "Estimated Cost" : "Price Breakdown"}
+              {paymentState === "ready" ? "Price Breakdown" : "Estimated Cost"}
             </p>
 
-            {paymentState === "unavailable" ? (
+            {paymentState !== "ready" ? (
               // no fee breakdown here, nothing's actually being charged
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -334,14 +338,16 @@ function CheckoutContent() {
             )}
 
             <div className="border-t border-gray-100 mt-4 pt-4 flex justify-between items-center">
-              <span className="font-bold text-[#143D60]">{paymentState === "unavailable" ? "Estimated total" : "Total"}</span>
-              <span className="font-bold text-xl text-[#143D60]">${fmt(paymentState === "unavailable" ? subtotal : total)}</span>
+              <span className="font-bold text-[#143D60]">{paymentState === "ready" ? "Total" : "Estimated total"}</span>
+              <span className="font-bold text-xl text-[#143D60]">${fmt(paymentState === "ready" ? total : subtotal)}</span>
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              {paymentState === "unavailable"
-                ? "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept — this isn't collected through Circl."
-                : "All amounts in CAD. Your card is authorized now and only charged if the owner accepts."}
+              {paymentState === "ready"
+                ? "All amounts in CAD. Your card is authorized now and only charged if the owner accepts."
+                : paymentState === "rate_limited"
+                ? "Give it a few seconds and try again."
+                : "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept — this isn't collected through Circl."}
             </p>
 
             {error && (
@@ -366,6 +372,15 @@ function CheckoutContent() {
                   className="w-full bg-[#143D60] text-white font-bold rounded-xl py-3.5 text-sm hover:bg-[#27667B] transition-colors duration-200"
                 >
                   Send Request
+                </button>
+              )}
+
+              {!submitting && paymentState === "rate_limited" && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 text-sm hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Try again
                 </button>
               )}
 

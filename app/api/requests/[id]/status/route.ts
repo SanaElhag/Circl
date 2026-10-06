@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { supabaseForRequest } from "@/lib/supabaseServer";
 import { apiError } from "@/lib/apiError";
+import { rateLimit } from "@/lib/rateLimit";
 
 type Action = "accept" | "decline" | "cancel";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const limited = rateLimit(req, "request-status", { max: 20, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { id } = await params;
 
   let supabase, user;

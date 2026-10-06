@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { supabaseForRequest } from "@/lib/supabaseServer";
 import { apiError } from "@/lib/apiError";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
+  const limited = rateLimit(req, "stripe-connect-status", { max: 20, windowMs: 60_000 });
+  if (limited) return limited;
+
   let supabase, user;
   try {
     ({ supabase, user } = await supabaseForRequest(req));
