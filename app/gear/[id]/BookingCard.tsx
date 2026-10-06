@@ -107,19 +107,12 @@ export default function BookingCard({
     );
   }
 
-  // Owner hasn't finished Stripe Connect onboarding — can't accept payments yet
-  if (!ownerStripeEnabled) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-2">
-        <div className="flex items-center justify-center gap-2 text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-          <span className="text-sm font-semibold">Payouts not set up yet</span>
-        </div>
-        <p className="text-xs text-gray-400">This owner hasn&apos;t finished setting up payouts. Check back soon.</p>
-      </div>
-    );
-  }
-
+  // Stripe payouts aren't live yet for most owners (the platform's own Stripe
+  // account isn't even set up, let alone individual owners'). That used to
+  // hard-block every single request on the site — nobody could rent anything
+  // from anybody. Requests now always go through; checkout falls back to a
+  // "pay the owner directly" flow when Stripe isn't available for this
+  // listing specifically.
   const isLoggedIn = !!userId;
 
   return (
@@ -178,7 +171,9 @@ export default function BookingCard({
       </button>
 
       <p className="text-xs text-gray-400 text-center">
-        Your card is authorized now and only charged if the owner accepts.
+        {ownerStripeEnabled
+          ? "Your card is authorized now and only charged if the owner accepts."
+          : "Online payment isn't set up for this listing yet — you'll arrange payment with the owner directly once they accept."}
       </p>
     </div>
   );

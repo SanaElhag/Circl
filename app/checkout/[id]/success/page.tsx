@@ -12,6 +12,7 @@ function SuccessContent() {
   const listingTitle = params.get("listing") ?? "Your rental";
   const days = params.get("days") ?? "—";
   const total = params.get("total") ?? "—";
+  const paid = params.get("paid") !== "0";
   const startDate = params.get("start") ?? "";
   const endDate = params.get("end") ?? "";
 
@@ -67,10 +68,16 @@ function SuccessContent() {
                 <span className="font-semibold text-[#143D60]">{days} {days === "1" ? "day" : "days"}</span>
               </div>
               <div className="border-t border-gray-100 pt-3 flex justify-between">
-                <span className="text-gray-500">Total (incl. fees + tax)</span>
+                <span className="text-gray-500">{paid ? "Total (incl. fees + tax)" : "Estimated cost"}</span>
                 <span className="font-bold text-[#143D60]">${total} CAD</span>
               </div>
             </div>
+
+            {!paid && (
+              <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                Online payment isn&apos;t set up for this listing yet — this amount isn&apos;t charged through Circl. Arrange payment with the owner directly once they accept.
+              </p>
+            )}
 
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
               <div className="flex justify-between items-center">

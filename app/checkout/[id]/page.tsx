@@ -35,7 +35,11 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [piError, setPiError] = useState<string | null>(null);
+  // "unavailable" covers every reason online payment can't happen for this
+  // booking right now (Stripe not configured at all, or this owner hasn't
+  // finished Connect onboarding) — in every case the fallback is the same:
+  // send the request anyway and let the two of them settle up directly.
+  const [paymentState, setPaymentState] = useState<"checking" | "ready" | "unavailable">("checking");
 
   useEffect(() => {
     async function init() {
@@ -72,19 +76,24 @@ function CheckoutContent() {
         setListing({ ...data, users: ownerData ?? null });
 
         if (startDate && endDate) {
-          const res = await fetch("/api/stripe/create-payment-intent", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ listingId, startDate, endDate, note }),
-          });
-          const piData = await res.json();
-          if (!res.ok) {
-            setPiError(piData.error ?? "Couldn't set up payment for this listing.");
-          } else {
-            setClientSecret(piData.clientSecret);
+          try {
+            const res = await fetch("/api/stripe/create-payment-intent", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ listingId, startDate, endDate, note }),
+            });
+            if (res.ok) {
+              const piData = await res.json();
+              setClientSecret(piData.clientSecret);
+              setPaymentState("ready");
+            } else {
+              setPaymentState("unavailable");
+            }
+          } catch {
+            setPaymentState("unavailable");
           }
         }
       }
@@ -107,7 +116,18 @@ function CheckoutContent() {
     });
   }
 
-  async function handleConfirmed(paymentIntentId: string) {
+  /**
+   * Inserts the request row, notifies the owner, and redirects to the
+   * success page. Shared by the real-payment path (card authorized via
+   * Stripe) and the no-payment fallback (Stripe not available for this
+   * listing) — they differ only in what they pass for the payment fields
+   * and what "total" means on the confirmation screen.
+   */
+  async function submitRequest(paymentFields: {
+    stripe_payment_intent_id: string | null;
+    payment_status: string;
+    amount_total_cents: number | null;
+  }, displayTotal: number, paid: boolean) {
     if (!listing || !user || !startDate || !endDate) return;
     setSubmitting(true);
     setError(null);
@@ -130,9 +150,7 @@ function CheckoutContent() {
           start_date: startDate,
           end_date: endDate,
           requester_note: note || null,
-          stripe_payment_intent_id: paymentIntentId,
-          payment_status: "authorized",
-          amount_total_cents: Math.round(total * 100),
+          ...paymentFields,
         })
         .select("id")
         .single();
@@ -152,7 +170,7 @@ function CheckoutContent() {
 
       const payRef = `CRC-${req.id.slice(0, 8).toUpperCase()}`;
       router.push(
-        `/checkout/${listing.id}/success?request=${req.id}&ref=${payRef}&listing=${encodeURIComponent(listing.title)}&days=${days}&total=${fmt(total)}&start=${startDate}&end=${endDate}`
+        `/checkout/${listing.id}/success?request=${req.id}&ref=${payRef}&listing=${encodeURIComponent(listing.title)}&days=${days}&total=${fmt(displayTotal)}&paid=${paid ? "1" : "0"}&start=${startDate}&end=${endDate}`
       );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -160,6 +178,25 @@ function CheckoutContent() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleConfirmed(paymentIntentId: string) {
+    return submitRequest(
+      { stripe_payment_intent_id: paymentIntentId, payment_status: "authorized", amount_total_cents: Math.round(total * 100) },
+      total,
+      true
+    );
+  }
+
+  function handleConfirmNoPayment() {
+    // No platform fee or tax is actually being collected here, so the
+    // confirmation shows the plain gear cost — not the fee+tax total, which
+    // would overstate what the renter and owner actually agreed to pay.
+    return submitRequest(
+      { stripe_payment_intent_id: null, payment_status: "unpaid", amount_total_cents: Math.round(subtotal * 100) },
+      subtotal,
+      false
+    );
   }
 
   if (loading) {
@@ -271,34 +308,50 @@ function CheckoutContent() {
         {/* RIGHT */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sticky top-24">
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-4">Price Breakdown</p>
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-4">
+              {paymentState === "unavailable" ? "Estimated Cost" : "Price Breakdown"}
+            </p>
 
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">${listing.price_per_day.toFixed(2)} × {days} {days === 1 ? "day" : "days"}</span>
-                <span className="font-semibold text-[#143D60]">${fmt(subtotal)}</span>
+            {paymentState === "unavailable" ? (
+              // Nothing is actually being charged through the platform for
+              // this booking, so no fee/tax breakdown is shown — that would
+              // imply an amount is being collected when it isn't.
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">${listing.price_per_day.toFixed(2)} × {days} {days === 1 ? "day" : "days"}</span>
+                  <span className="font-semibold text-[#143D60]">${fmt(subtotal)}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Platform fee (15%)</span>
-                <span className="font-semibold text-[#143D60]">${fmt(platformFee)}</span>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">${listing.price_per_day.toFixed(2)} × {days} {days === 1 ? "day" : "days"}</span>
+                  <span className="font-semibold text-[#143D60]">${fmt(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Platform fee (15%)</span>
+                  <span className="font-semibold text-[#143D60]">${fmt(platformFee)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">GST (5%)</span>
+                  <span className="font-semibold text-[#143D60]">${fmt(gst)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">PST (7%)</span>
+                  <span className="font-semibold text-[#143D60]">${fmt(pst)}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">GST (5%)</span>
-                <span className="font-semibold text-[#143D60]">${fmt(gst)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">PST (7%)</span>
-                <span className="font-semibold text-[#143D60]">${fmt(pst)}</span>
-              </div>
-            </div>
+            )}
 
             <div className="border-t border-gray-100 mt-4 pt-4 flex justify-between items-center">
-              <span className="font-bold text-[#143D60]">Total</span>
-              <span className="font-bold text-xl text-[#143D60]">${fmt(total)}</span>
+              <span className="font-bold text-[#143D60]">{paymentState === "unavailable" ? "Estimated total" : "Total"}</span>
+              <span className="font-bold text-xl text-[#143D60]">${fmt(paymentState === "unavailable" ? subtotal : total)}</span>
             </div>
 
             <p className="text-xs text-gray-400 mt-2">
-              All amounts in CAD. Your card is authorized now and only charged if the owner accepts.
+              {paymentState === "unavailable"
+                ? "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept — this isn't collected through Circl."
+                : "All amounts in CAD. Your card is authorized now and only charged if the owner accepts."}
             </p>
 
             {error && (
@@ -313,18 +366,23 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {!submitting && clientSecret && (
+              {!submitting && paymentState === "ready" && clientSecret && (
                 <CheckoutPaymentForm clientSecret={clientSecret} onConfirmed={handleConfirmed} disabled={submitting} />
               )}
 
-              {!submitting && !clientSecret && piError && (
-                <div className="bg-yellow-50 text-yellow-700 text-sm rounded-xl px-4 py-3 border border-yellow-200">{piError}</div>
+              {!submitting && paymentState === "unavailable" && (
+                <button
+                  onClick={handleConfirmNoPayment}
+                  className="w-full bg-[#143D60] text-white font-bold rounded-xl py-3.5 text-sm hover:bg-[#27667B] transition-colors duration-200"
+                >
+                  Send Request
+                </button>
               )}
 
-              {!submitting && !clientSecret && !piError && (
+              {!submitting && paymentState === "checking" && (
                 <div className="flex items-center justify-center gap-2 py-4 text-sm text-gray-400">
                   <div className="w-4 h-4 border-2 border-[#143D60] border-t-transparent rounded-full animate-spin" />
-                  Preparing secure payment...
+                  Checking payment options...
                 </div>
               )}
             </div>
