@@ -10,8 +10,8 @@ import PasswordStrength from "@/app/components/PasswordStrength";
 export default function ResetPasswordPage() {
   const router = useRouter();
 
-  // "checking" until the recovery token in the URL hash has been exchanged for
-  // a session by detectSessionInUrl; "invalid" if it never arrives.
+  // "checking" while we wait for the reset link's token to turn into a
+  // session, "invalid" if it never does
   const [stage,    setStage]    = useState<"checking" | "ready" | "invalid" | "done">("checking");
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");

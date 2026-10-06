@@ -38,13 +38,9 @@ export default async function GearDetailPage({
   const [{ data: ownerData }, { data: categoryData }, { data: listingImages }, { data: ratingRows }] = await Promise.all([
     supabase.from("users").select("full_name, stripe_charges_enabled").eq("id", listing.user_id).single(),
     supabase.from("categories").select("name").eq("slug", listing.category).single(),
-    // Note: the table is "listing_images" (singular) — this used to say
-    // "listings_images" (plural), a table that doesn't exist, so every extra
-    // photo silently failed to load and only the cover image ever showed.
+    // table name is "listing_images", singular
     supabase.from("listing_images").select("id, url, position").eq("listing_id", id).order("position"),
-    // Computed live from actual reviews rather than read off a `rating` column
-    // on the listing — that column is never written back to, so it would
-    // freeze at whatever it was seeded with and ignore every real review.
+    // calculated from real reviews instead of a rating column that nothing updates
     supabase.from("ratings").select("gear_rating").eq("listing_id", id).not("gear_rating", "is", null),
   ]);
 

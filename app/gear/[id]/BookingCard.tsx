@@ -31,7 +31,7 @@ export default function BookingCard({
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Check auth client-side — server-side auth with anon key is unreliable
+  // check login status in the browser - the server side check isn't reliable here
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user?.id ?? null);
@@ -107,12 +107,8 @@ export default function BookingCard({
     );
   }
 
-  // Stripe payouts aren't live yet for most owners (the platform's own Stripe
-  // account isn't even set up, let alone individual owners'). That used to
-  // hard-block every single request on the site — nobody could rent anything
-  // from anybody. Requests now always go through; checkout falls back to a
-  // "pay the owner directly" flow when Stripe isn't available for this
-  // listing specifically.
+  // stripe isn't set up yet for most owners, but we still let people send
+  // requests - checkout handles paying the owner directly instead
   const isLoggedIn = !!userId;
 
   return (

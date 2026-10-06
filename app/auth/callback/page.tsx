@@ -5,14 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-/**
- * Landing page for the email-confirmation link.
- *
- * The browser client uses the implicit flow, so Supabase sends the user back
- * here with the tokens in the URL hash and `detectSessionInUrl` picks them up
- * asynchronously. We wait for that to land rather than reading getSession()
- * once, otherwise a confirmed user gets bounced to the login page.
- */
+// page the email confirmation link sends people to. supabase puts the
+// login tokens in the url and it takes a moment to pick them up, so we
+// wait for that instead of just checking once and bouncing them to login
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [state, setState] = useState<"working" | "failed">("working");
@@ -34,7 +29,7 @@ export default function AuthCallbackPage() {
       if (session) finish();
     });
 
-    // If nothing arrived the link was already used, expired, or malformed.
+    // if nothing shows up the link was probably already used or expired
     const timeout = setTimeout(() => {
       if (!done) setState("failed");
     }, 6000);

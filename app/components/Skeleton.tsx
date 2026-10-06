@@ -1,14 +1,10 @@
-/**
- * Shared pulsing-block primitive for loading skeletons. Compose these into
- * shapes that match the real content (a row, a card, a stat tile) so the
- * page doesn't jump around once data arrives — the skeleton should occupy
- * roughly the same space as what replaces it.
- */
+// basic loading block - stack a few of these into roughly the shape of the
+// real content so the page doesn't jump when the data shows up
 export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`bg-gray-100 animate-pulse rounded-xl ${className}`} />;
 }
 
-/** A conversation/notification-style row: avatar circle + two lines of text. */
+// a list-row shape: avatar circle + two lines, used for messages/notifications
 export function SkeletonRow() {
   return (
     <div className="flex items-center gap-4 px-5 py-4">

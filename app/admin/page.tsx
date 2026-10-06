@@ -5,19 +5,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "./AdminShell";
 
-/**
- * Admin gate.
- *
- * This used to be a server component reading the session from cookies via
- * @supabase/ssr — but the rest of the app signs in with the plain supabase-js
- * browser client, which keeps the session in localStorage and never sets a
- * cookie. The server therefore saw no session and bounced every admin to
- * /auth/login. The check runs client-side so it sees the same session
- * everything else does.
- *
- * This gate only hides the UI. What actually protects admin data is RLS on the
- * Supabase tables — make sure the write policies check the caller's role.
- */
+// checks you're an admin before showing the dashboard. has to run client
+// side since logins are stored in the browser, not a cookie the server can
+// read. note this just hides the page - the real protection is the RLS
+// policies on the supabase tables themselves
 export default function AdminPage() {
   const router = useRouter();
   const [admin, setAdmin] = useState<{ name: string; email: string } | null>(null);

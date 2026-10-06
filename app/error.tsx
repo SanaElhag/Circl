@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-// Catches any render/runtime error thrown inside a route segment — this is
-// what stands between a broken page and Next's default "Application error"
-// screen. It runs inside the root layout, so nav/footer stay visible.
+// catches a page crashing so people see this instead of a blank/broken screen
 export default function ErrorBoundary({
   error,
   reset,
@@ -14,8 +12,7 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Goes to the server console today; swap in a real error-tracking
-    // service (Sentry, etc.) once one's wired up.
+    // just logs for now, hook up Sentry or similar later
     console.error("Unhandled error in route segment:", error);
   }, [error]);
 

@@ -11,19 +11,12 @@ interface Props {
   className?: string;
 }
 
-/**
- * A CTA link on a server-rendered marketing page (homepage, about) that
- * needs to say something different once you're already signed in — "Create
- * an Account" is a dead end for someone who already has one. The page
- * itself can't know auth state server-side (sessions live in localStorage,
- * not a cookie), so this resolves it client-side after mount, same as
- * TopNav does for the nav bar.
- *
- * Defaults to the signed-out label while the check is in flight, since
- * that's who most first-time visitors are — a signed-in visitor sees a
- * brief flash of the wrong label rather than a loading placeholder on every
- * CTA button on the page.
- */
+// a CTA button on the homepage/about page that needs to say something
+// different if you're already signed in ("Create an account" doesn't make
+// sense anymore). these pages are server-rendered and can't check login
+// state themselves, so this checks on the client after the page loads,
+// same as TopNav does. shows the signed-out version first since that's
+// most visitors - signed-in people just see it swap after a moment
 export default function AuthAwareCTA({ signedOutHref, signedOutLabel, signedInHref, signedInLabel, className }: Props) {
   const user = useAuthUser();
 

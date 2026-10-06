@@ -1,8 +1,4 @@
-/**
- * Single source of truth for the password policy. Used by the register,
- * reset-password, and account-settings forms so a password that's accepted
- * in one place is never silently weaker than what another page implies.
- */
+// password rules in one place so register / reset / account settings all match
 
 export const PASSWORD_MIN_LENGTH = 8;
 
