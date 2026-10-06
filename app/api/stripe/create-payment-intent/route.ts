@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe, computeAmounts } from "@/lib/stripe";
 import { supabaseForRequest } from "@/lib/supabaseServer";
 import { apiError } from "@/lib/apiError";
+import { rateLimit } from "@/lib/rateLimit";
 
 function diffDays(a: string, b: string) {
   return Math.max(1, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, "create-payment-intent", { max: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   let supabase, user;
   try {
     ({ supabase, user } = await supabaseForRequest(req));
