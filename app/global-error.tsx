@@ -2,11 +2,9 @@
 
 import { useEffect } from "react";
 
-// Only fires if the root layout itself crashes (e.g. TopNav or Footer throws)
-// — errors inside a normal page are caught by error.tsx instead, which keeps
-// the nav/footer on screen. This one has to render its own <html>/<body>
-// since it's standing in for the entire root layout, and deliberately avoids
-// depending on anything that could itself be the thing that broke.
+// only shows up if the layout itself breaks (nav, footer etc) - normal page
+// errors go to error.tsx instead. has to build its own html/body here since
+// it's replacing the whole layout, and keeps things plain so it can't break too
 export default function GlobalError({
   error,
   reset,

@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-// Next renders this for any URL that doesn't match a route, and for any
-// in-app call to notFound() (e.g. a gear listing that's been deleted).
+// shows up for any bad url, or when a listing/page has been deleted
 export default function NotFound() {
   return (
     <main className="min-h-screen bg-[#F9FAFB] flex items-center justify-center px-6 py-24">

@@ -231,9 +231,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
   const [tab,         setTab]         = useState<OwnerTab>("summary");
   const [requestList, setRequestList] = useState<OwnerRequest[]>(requests);
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
-  // Stripe Connect isn't live yet (see the "Coming soon" banner below) — the
-  // working /api/stripe/connect flow that used to live here moved to
-  // list-your-gear/ConnectButton.tsx's comment for when it's ready.
+  // stripe connect isn't live yet, see the coming soon banner below
 
   const accepted        = requestList.filter((r) => r.status === "accepted");
   const pendingCount    = requestList.filter((r) => r.status === "pending").length;
@@ -449,9 +447,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
               <p className="text-sm font-semibold text-[#27667B]">Payouts are active — accepted rentals pay out automatically.</p>
             </div>
           ) : (
-            // Matches the "Coming soon" framing on /list-your-gear — Stripe payouts
-            // aren't live yet, so this doesn't offer a "Set up payouts" action that
-            // would just fail against an unconfigured Stripe account.
+            // no "set up payouts" button here since stripe isn't configured yet
             <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-bold text-amber-800">Automatic payouts are coming soon</p>

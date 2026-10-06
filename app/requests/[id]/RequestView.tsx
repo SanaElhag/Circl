@@ -532,10 +532,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
 
 function PriceBreakdown({ pricePerDay, days, paymentStatus }: { pricePerDay: number; days: number; paymentStatus: string | null }) {
   const { subtotal, platformFee, gst, pst, total } = computeAmounts(pricePerDay, days);
-  // "unpaid" means this request never went through Stripe — online payment
-  // wasn't available for this listing at booking time, so no fee/tax is
-  // actually being collected. Showing the fee breakdown here would claim an
-  // amount that was never agreed to or charged.
+  // "unpaid" means this went through without stripe, so don't show fees that weren't charged
   const paid = paymentStatus !== "unpaid" && paymentStatus !== null;
 
   return (
@@ -576,14 +573,7 @@ function PriceBreakdown({ pricePerDay, days, paymentStatus }: { pricePerDay: num
 // ─── Earnings card (owner view) ───────────────────────────────────────────────
 
 function OwnerEarningsCard({ pricePerDay, days, paymentStatus }: { pricePerDay: number; days: number; paymentStatus: string | null }) {
-  // The renter pays the platform fee and taxes on top of the listing price —
-  // Stripe's application_fee_amount takes exactly that from the charge before
-  // transferring the rest, so the owner's payout is the full subtotal below,
-  // not subtotal minus the fee. (See computeAmounts + create-payment-intent.)
-  //
-  // "unpaid" means this one went through without Stripe (not available for
-  // this listing at booking time) — nothing is being collected or paid out
-  // through the platform at all, so the note below says that instead.
+  // renter pays the fee/tax on top, owner just gets the plain subtotal - see lib/pricing.ts
   const { subtotal } = computeAmounts(pricePerDay, days);
   const paid = paymentStatus !== "unpaid" && paymentStatus !== null;
 

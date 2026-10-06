@@ -20,8 +20,8 @@ export default function ForgotPasswordPage() {
         email.trim().toLowerCase(),
         { redirectTo: `${window.location.origin}/auth/reset-password` }
       );
-      // Deliberately don't surface "no such user" — that would let anyone probe
-      // which UFV emails have accounts. Always show the same confirmation.
+      // don't tell them if the email doesn't exist - don't want people
+      // checking which UFV emails have accounts
       if (err && !/user not found/i.test(err.message)) {
         setError(err.message);
         return;

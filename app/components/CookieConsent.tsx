@@ -7,25 +7,22 @@ const STORAGE_KEY = "circl_cookie_consent";
 
 export type ConsentChoice = "accepted" | "necessary-only";
 
-/** Reads the stored choice, if any — for gating future non-essential scripts. */
+// reads back whatever the person picked, so we can check it later before
+// loading anything like analytics
 export function getCookieConsent(): ConsentChoice | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw === "accepted" || raw === "necessary-only" ? raw : null;
   } catch {
-    // Private browsing / storage blocked — treat as no choice made yet.
+    // private browsing or storage blocked, just treat it as no choice yet
     return null;
   }
 }
 
-/**
- * First-visit banner disclosing local storage use and, in the future, gating
- * any non-essential script (analytics, etc.) behind an actual choice rather
- * than loading it unconditionally. There's nothing non-essential to gate yet
- * — see /cookies — so both buttons currently do the same thing functionally;
- * they're kept as two real choices so a future analytics script can check
- * getCookieConsent() === "accepted" before loading.
- */
+// banner that shows on first visit explaining we only use local storage to
+// keep you signed in, nothing else yet. both buttons do the same thing for
+// now since there's nothing extra to turn on/off - see /cookies
+
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
@@ -37,8 +34,7 @@ export default function CookieConsent() {
     try {
       localStorage.setItem(STORAGE_KEY, choice);
     } catch {
-      // Nothing we can do if storage is blocked — just stop showing the banner
-      // for this session rather than nag on every page.
+      // can't save it if storage is blocked, just hide it for this visit
     }
     setVisible(false);
   }
@@ -49,9 +45,7 @@ export default function CookieConsent() {
     <div
       role="dialog"
       aria-label="Cookie notice"
-      // bottom-20 on mobile clears the floating MobileBottomNav pill (fixed
-      // bottom-4, ~64px tall) instead of stacking on top of it; md:bottom-0
-      // once that nav is hidden at the md breakpoint.
+      // bottom-20 on mobile so it sits above the floating nav bar, not on top of it
       className="fixed bottom-20 md:bottom-0 inset-x-0 z-[60] p-4 sm:p-6"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
     >

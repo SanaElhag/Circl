@@ -1,12 +1,6 @@
 import Stripe from "stripe";
 
-// Lazily constructed: importing this module happens at build time (e.g. Next's
-// page-data collection for route handlers), before real env vars are set, and
-// the Stripe SDK throws immediately on an empty API key.
-//
-// This file is server-only (it imports the `stripe` Node SDK) — client
-// components that just need the price math should import from "@/lib/pricing"
-// instead, not re-export it from here.
+// built lazily so just importing this file doesn't crash when there's no key yet
 let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
@@ -19,4 +13,6 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
+// server only from here down - if you just need the pricing math in a
+// client component, import from "@/lib/pricing" instead
 export { PLATFORM_FEE, GST, PST, computeAmounts } from "./pricing";

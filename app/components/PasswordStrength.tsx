@@ -2,11 +2,8 @@
 
 import { PASSWORD_RULES, firstUnmetRule } from "@/lib/password";
 
-/**
- * Live strength meter + policy checklist for a password input. Shared by
- * register, reset-password, and account-settings so the bar you see is the
- * same rule set the submit button actually enforces.
- */
+// password strength bar, used on register / reset / account settings so
+// it's always checking the same rules the submit button enforces
 export default function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
 

@@ -1,8 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import sanitizeHtml from "sanitize-html";
 import BlogPostClient from "./BlogPostClient";
 import { supabasePublic } from "@/lib/supabasePublic";
+
+// blog post bodies are saved as raw HTML, so this strips anything that
+// could run script or inject markup before it ever reaches the page
+function sanitizeBlogHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: [
+      "p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li",
+      "h2", "h3", "h4", "blockquote", "img", "code", "pre", "hr",
+    ],
+    allowedAttributes: {
+      a: ["href", "title", "target", "rel"],
+      img: ["src", "alt", "title"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      // force safe rel on every link - don't trust whatever was typed in
+      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
+    },
+  });
+}
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-CA", {
@@ -143,7 +164,7 @@ export default async function BlogPostPage({
             prose-ul:pl-5 prose-li:mb-1.5
             prose-img:rounded-2xl
           "
-          dangerouslySetInnerHTML={{ __html: post.content ?? "" }}
+          dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content ?? "") }}
         />
 
         {/* ── Comments section (client component) ── */}

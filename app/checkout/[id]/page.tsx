@@ -35,10 +35,9 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  // "unavailable" covers every reason online payment can't happen for this
-  // booking right now (Stripe not configured at all, or this owner hasn't
-  // finished Connect onboarding) — in every case the fallback is the same:
-  // send the request anyway and let the two of them settle up directly.
+  // "unavailable" covers any reason payment can't happen right now (stripe not
+  // set up, owner hasn't finished onboarding, etc) - either way we just send
+  // the request and let them sort out payment directly
   const [paymentState, setPaymentState] = useState<"checking" | "ready" | "unavailable">("checking");
 
   useEffect(() => {
@@ -116,13 +115,8 @@ function CheckoutContent() {
     });
   }
 
-  /**
-   * Inserts the request row, notifies the owner, and redirects to the
-   * success page. Shared by the real-payment path (card authorized via
-   * Stripe) and the no-payment fallback (Stripe not available for this
-   * listing) — they differ only in what they pass for the payment fields
-   * and what "total" means on the confirmation screen.
-   */
+  // creates the request, notifies the owner, and sends them to the success
+  // page. used by both the real stripe payment and the "pay directly" path
   async function submitRequest(paymentFields: {
     stripe_payment_intent_id: string | null;
     payment_status: string;
@@ -133,7 +127,7 @@ function CheckoutContent() {
     setError(null);
 
     try {
-      // Refresh session to ensure the JWT is current before the RLS-protected insert
+      // get a fresh session so the login token is current for this insert
       const { data: { session: freshSession } } = await supabase.auth.getSession();
       if (!freshSession) {
         setSubmitting(false);
@@ -189,9 +183,7 @@ function CheckoutContent() {
   }
 
   function handleConfirmNoPayment() {
-    // No platform fee or tax is actually being collected here, so the
-    // confirmation shows the plain gear cost — not the fee+tax total, which
-    // would overstate what the renter and owner actually agreed to pay.
+    // no fee/tax here since nothing's actually being charged, just the gear cost
     return submitRequest(
       { stripe_payment_intent_id: null, payment_status: "unpaid", amount_total_cents: Math.round(subtotal * 100) },
       subtotal,
@@ -313,9 +305,7 @@ function CheckoutContent() {
             </p>
 
             {paymentState === "unavailable" ? (
-              // Nothing is actually being charged through the platform for
-              // this booking, so no fee/tax breakdown is shown — that would
-              // imply an amount is being collected when it isn't.
+              // no fee breakdown here, nothing's actually being charged
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">${listing.price_per_day.toFixed(2)} × {days} {days === 1 ? "day" : "days"}</span>

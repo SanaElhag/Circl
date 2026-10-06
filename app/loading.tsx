@@ -1,9 +1,7 @@
 import { Skeleton } from "./components/Skeleton";
 
-// Shown while the homepage's server-side data (featured listings, hero slide,
-// promo, testimonials) is resolving — on first load and on any revalidation
-// that isn't served from cache. Mirrors the real layout so nothing jumps once
-// the actual content swaps in.
+// shows while the homepage data is loading, matches the real layout so it
+// doesn't jump around once the content shows up
 export default function HomeLoading() {
   return (
     <div className="bg-[#F5F0E8]">
