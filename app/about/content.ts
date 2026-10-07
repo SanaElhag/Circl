@@ -1,5 +1,5 @@
 // ── Images ────────────────────────────────────────────────────────────────────
-export const HERO_IMAGE = "/images/hero.jpg";
+export const HERO_IMAGE = "/images/about.jpg";
 export const STORY_IMAGE = "/images/trust.jpg";
 
 // ── Hero section ──────────────────────────────────────────────────────────────

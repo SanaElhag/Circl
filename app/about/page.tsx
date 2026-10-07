@@ -45,7 +45,7 @@ export default function AboutPage() {
 
     {/* Right — image, full height */}
     <div className="relative hidden lg:block">
-      <Image src={HERO_IMAGE} alt="BC mountains" fill className="object-cover object-center" priority />
+      <Image src={HERO_IMAGE} alt="Alaa and Sana, Circl's founders" fill className="object-cover object-center" priority />
       <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/20 to-transparent" />
     </div>
 
