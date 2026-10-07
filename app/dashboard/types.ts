@@ -20,7 +20,7 @@ export interface RawListingBasic {
 
 export interface RawBorrowerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined";
+  status: "pending" | "accepted" | "declined" | "cancelled";
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -56,7 +56,7 @@ export interface ListingBasic {
 
 export interface BorrowerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined";
+  status: "pending" | "accepted" | "declined" | "cancelled";
   start_date: string | null;
   end_date: string | null;
   created_at: string;

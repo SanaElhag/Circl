@@ -17,28 +17,29 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  pending:  "bg-yellow-50 text-yellow-700 border-yellow-200",
-  accepted: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",
-  declined: "bg-red-50 text-red-600 border-red-200",
+// Rental history is grouped by this, not the raw db status — an "accepted"
+// request whose end date has passed reads a lot better as "Completed"
+type HistoryGroup = "pending" | "accepted" | "completed" | "declined" | "cancelled";
+
+const GROUP_META: Record<HistoryGroup, { label: string; dot: string; defaultOpen: boolean }> = {
+  pending:   { label: "Pending",   dot: "bg-yellow-400",  defaultOpen: true },
+  accepted:  { label: "Accepted",  dot: "bg-[#A0C878]",   defaultOpen: true },
+  completed: { label: "Completed", dot: "bg-[#27667B]",   defaultOpen: true },
+  declined:  { label: "Declined",  dot: "bg-red-400",     defaultOpen: false },
+  cancelled: { label: "Cancelled", dot: "bg-gray-400",    defaultOpen: false },
 };
 
-// Left accent border by status — replaces the uniform gray border
-const STATUS_ACCENT: Record<string, string> = {
-  pending:  "border-l-4 border-l-yellow-300",
-  accepted: "border-l-4 border-l-[#A0C878]",
-  declined: "border-l-4 border-l-red-300",
-};
+const GROUP_ORDER: HistoryGroup[] = ["pending", "accepted", "completed", "declined", "cancelled"];
 
-const STATUS_ORDER: Record<string, number> = {
-  active: 0, accepted: 1, pending: 2,
-  completed: 3, closed: 4, cancelled: 5, declined: 6,
-};
+function groupForRequest(r: BorrowerRequest): HistoryGroup {
+  if (r.status === "accepted") {
+    return r.end_date && new Date(r.end_date) < new Date() ? "completed" : "accepted";
+  }
+  return r.status;
+}
 
-function sortByStatusThenDate<T extends { status: string; start_date?: string | null; created_at?: string }>(items: T[]): T[] {
+function sortByDateDesc<T extends { start_date?: string | null; created_at?: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => {
-    const sd = (STATUS_ORDER[a.status] ?? 7) - (STATUS_ORDER[b.status] ?? 7);
-    if (sd !== 0) return sd;
     const aDate = a.start_date ?? a.created_at ?? "";
     const bDate = b.start_date ?? b.created_at ?? "";
     return new Date(bDate).getTime() - new Date(aDate).getTime();
@@ -178,6 +179,71 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
   );
 }
 
+// ── History card ──────────────────────────────────────────────────────────────
+
+function HistoryCard({ r, canRate, rated, onRate }: {
+  r: BorrowerRequest;
+  canRate: boolean;
+  rated: boolean;
+  onRate: () => void;
+}) {
+  const listing = r.listings;
+  const owner   = unwrapUser(listing?.users ?? null);
+  const days    = r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : null;
+  const total   = days && listing?.price_per_day ? days * listing.price_per_day : null;
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col">
+      <div className="relative w-full aspect-[4/3] bg-gray-100 shrink-0">
+        {listing?.image_url
+          ? <Image src={listing.image_url} alt={listing.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" />
+          : (
+            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-gray-100 to-gray-200">
+              <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
+      </div>
+      <div className="p-4 flex-1 flex flex-col">
+        <Link href={`/gear/${listing?.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200 text-sm block truncate">
+          {listing?.title ?? "Listing"}
+        </Link>
+        <p className="text-xs text-gray-400 mt-0.5">{CATEGORY_LABELS[listing?.category ?? ""] ?? listing?.category}</p>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+          {r.start_date && r.end_date && (
+            <span className="text-xs text-gray-400">{fmtDate(r.start_date)} – {fmtDate(r.end_date)}</span>
+          )}
+          {days && <span className="text-xs text-gray-400">{days} day{days !== 1 ? "s" : ""}</span>}
+        </div>
+        {total && <p className="text-sm font-bold text-[#143D60] mt-1">${total.toFixed(2)}</p>}
+        {owner && (
+          <Link href={`/profile/${owner.id}`} className="text-xs text-[#27667B] mt-1.5 inline-block hover:underline">
+            Owner: {owner.full_name}
+          </Link>
+        )}
+
+        <div className="mt-auto pt-3 flex gap-2">
+          <Link href={`/requests/${r.id}`}
+            className="flex-1 text-center border border-[#143D60] text-[#143D60] font-semibold py-2 rounded-xl text-xs hover:bg-[#143D60] hover:text-white transition-all duration-200">
+            View request
+          </Link>
+          {canRate && (
+            <button onClick={onRate}
+              className="flex-1 bg-[#DDEB9D] text-[#143D60] font-bold py-2 rounded-xl text-xs hover:bg-[#A0C878] transition-colors duration-200">
+              Rate
+            </button>
+          )}
+        </div>
+        {!canRate && rated && (
+          <p className="text-[11px] text-center text-gray-400 mt-2">Rated — thanks for your feedback</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
 type BorrowerTab = "summary" | "history";
@@ -194,20 +260,32 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
   ratedRequestIds: string[];
   userId: string;
 }) {
-  const [tab,       setTab]       = useState<BorrowerTab>("summary");
-  const [rated,     setRated]     = useState<Set<string>>(new Set(ratedRequestIds));
-  const [ratingFor, setRatingFor] = useState<BorrowerRequest | null>(null);
+  const [tab,         setTab]         = useState<BorrowerTab>("summary");
+  const [rated,       setRated]       = useState<Set<string>>(new Set(ratedRequestIds));
+  const [ratingFor,   setRatingFor]   = useState<BorrowerRequest | null>(null);
+  const [openGroups,  setOpenGroups]  = useState<Set<HistoryGroup>>(
+    () => new Set(GROUP_ORDER.filter((g) => GROUP_META[g].defaultOpen))
+  );
 
   const accepted   = requests.filter((r) => r.status === "accepted");
+  const completed  = requests.filter((r) => groupForRequest(r) === "completed");
   const totalDays  = accepted.reduce((s, r) => s + (r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : 1), 0);
   const totalSpent = accepted.reduce((s, r) => s + ((r.listings?.price_per_day ?? 0) * (r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : 1)), 0);
   const moneySaved = totalSpent * 10;
   const co2Saved   = totalDays * 2.4;
-  const unrated    = accepted.filter((r) => !rated.has(r.id));
+  const unrated    = completed.filter((r) => !rated.has(r.id));
 
   function handleRated(id: string) {
     setRated((prev) => new Set([...prev, id]));
     setRatingFor(null);
+  }
+
+  function toggleGroup(g: HistoryGroup) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g); else next.add(g);
+      return next;
+    });
   }
 
   // Stat border helper for the unified card layout
@@ -308,7 +386,7 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
 
       {/* ── History ── */}
       {tab === "history" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {requests.length === 0 && (
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-12 text-center">
               <p className="font-bold text-[#143D60] mb-1">No rental history</p>
@@ -319,64 +397,42 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
             </div>
           )}
 
-          {sortByStatusThenDate(requests).map((r) => {
-            const listing = r.listings;
-            const owner   = unwrapUser(listing?.users ?? null);
-            const days    = r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : null;
-            const total   = days && listing?.price_per_day ? days * listing.price_per_day : null;
-            const canRate = r.status === "accepted" && !rated.has(r.id);
-            const accentClass = STATUS_ACCENT[r.status] ?? "border-l-4 border-l-gray-100";
+          {GROUP_ORDER.map((group) => {
+            const items = sortByDateDesc(requests.filter((r) => groupForRequest(r) === group));
+            if (items.length === 0) return null;
+            const meta = GROUP_META[group];
+            const isOpen = openGroups.has(group);
 
             return (
-              <div key={r.id} className={`rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 ${accentClass}`}>
-                <div className="flex gap-4 p-5">
-                  <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                    {listing?.image_url
-                      ? <Image src={listing.image_url} alt={listing.title} fill className="object-cover" sizes="96px" />
-                      : <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-200" />}
+              <div key={group} className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleGroup(group)}
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50/60 transition-colors duration-200"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                    <span className="text-sm font-bold text-[#143D60]">{meta.label}</span>
+                    <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">{items.length}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <Link href={`/gear/${listing?.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200 text-sm block truncate">
-                          {listing?.title ?? "Listing"}
-                        </Link>
-                        <p className="text-xs text-gray-400 mt-0.5">{CATEGORY_LABELS[listing?.category ?? ""] ?? listing?.category}</p>
-                      </div>
-                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize shrink-0 ${STATUS_BADGE[r.status] ?? "bg-gray-50 text-gray-500 border-gray-200"}`}>
-                        {r.status}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                      {r.start_date && r.end_date && (
-                        <span className="text-xs text-gray-400">{fmtDate(r.start_date)} – {fmtDate(r.end_date)}</span>
-                      )}
-                      {days && <span className="text-xs text-gray-400">{days} day{days !== 1 ? "s" : ""}</span>}
-                      {total && <span className="text-xs font-bold text-[#143D60]">${total.toFixed(2)}</span>}
-                    </div>
-                    {owner && (
-                      <Link href={`/profile/${owner.id}`} className="text-xs text-[#27667B] mt-1.5 inline-block hover:underline">
-                        Owner: {owner.full_name}
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                <div className="px-5 pb-4 flex gap-2">
-                  <Link href={`/requests/${r.id}`}
-                    className="flex-1 text-center border border-[#143D60] text-[#143D60] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#143D60] hover:text-white transition-all duration-200">
-                    View request
-                  </Link>
-                  {canRate && (
-                    <button onClick={() => setRatingFor(r)}
-                      className="flex-1 bg-[#DDEB9D] text-[#143D60] font-bold py-2.5 rounded-xl text-sm hover:bg-[#A0C878] transition-colors duration-200">
-                      Rate
-                    </button>
-                  )}
-                </div>
-                {r.status === "accepted" && rated.has(r.id) && (
-                  <div className="px-5 pb-1">
-                    <p className="text-xs text-center text-gray-400">Rated — thanks for your feedback</p>
+                {isOpen && (
+                  <div className="px-5 pb-5 pt-1 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {items.map((r) => (
+                      <HistoryCard
+                        key={r.id}
+                        r={r}
+                        canRate={groupForRequest(r) === "completed" && !rated.has(r.id)}
+                        rated={rated.has(r.id)}
+                        onRate={() => setRatingFor(r)}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
