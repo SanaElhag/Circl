@@ -27,7 +27,7 @@ export async function supabaseForRequest(
   return { supabase, user: data.user };
 }
 
-/** Service-role client — bypasses RLS. Only for the Stripe webhook handler. */
+/** Service-role client — bypasses RLS. Use only where RLS genuinely can't do the job (webhooks, reading another user's auth data). */
 export function supabaseServiceRole(): SupabaseClient {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient(supabaseUrl, serviceKey, {

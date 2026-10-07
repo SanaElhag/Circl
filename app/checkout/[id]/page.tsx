@@ -164,6 +164,17 @@ function CheckoutContent() {
           body: `${userFullName} wants to rent "${listing.title}"`,
           requestId: req.id,
         });
+
+        // best-effort email - owner might have these turned off, or resend
+        // might not be configured yet, either way don't block the request
+        fetch("/api/notifications/request-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${freshSession.access_token}`,
+          },
+          body: JSON.stringify({ requestId: req.id }),
+        }).catch(() => {});
       }
 
       const payRef = `CRC-${req.id.slice(0, 8).toUpperCase()}`;
