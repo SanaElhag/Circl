@@ -150,8 +150,19 @@ export default function NotificationsPage() {
   }
 
   async function deleteNotification(id: string) {
+    // .select() so we can tell a real delete from RLS silently blocking it
+    // (Supabase reports success with zero rows affected either way)
+    const { data: deletedRows, error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", id)
+      .select("id");
+
+    if (error || !deletedRows || deletedRows.length === 0) {
+      alert("Couldn't delete that notification. Please try again.");
+      return;
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    await supabase.from("notifications").delete().eq("id", id);
   }
 
   async function handleClick(notif: Notification) {

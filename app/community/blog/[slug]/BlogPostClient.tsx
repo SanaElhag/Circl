@@ -108,8 +108,19 @@ export default function BlogPostClient({
   }
 
   async function deleteComment(commentId: string) {
+    // .select() so we can tell a real delete from RLS silently blocking it
+    // (Supabase reports success with zero rows affected either way)
+    const { data: deletedRows, error } = await supabase
+      .from("blog_comments")
+      .delete()
+      .eq("id", commentId)
+      .select("id");
+
+    if (error || !deletedRows || deletedRows.length === 0) {
+      alert("Couldn't delete that comment. Please try again.");
+      return;
+    }
     setComments((prev) => prev.filter((c) => c.id !== commentId));
-    await supabase.from("blog_comments").delete().eq("id", commentId);
   }
 
   return (

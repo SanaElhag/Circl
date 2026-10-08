@@ -276,10 +276,21 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
     }
 
     await supabase.from("listing_images").delete().eq("listing_id", id);
-    const { error } = await supabase.from("listings").delete().eq("id", id);
+    // .select() so we get back the rows that were actually deleted — if
+    // RLS silently blocks the delete, Supabase reports success with zero
+    // rows affected instead of an error, so checking `error` alone isn't enough
+    const { data: deletedRows, error } = await supabase
+      .from("listings")
+      .delete()
+      .eq("id", id)
+      .select("id");
 
     if (error) {
       alert(`Couldn't remove this listing: ${error.message}`);
+      return;
+    }
+    if (!deletedRows || deletedRows.length === 0) {
+      alert("Couldn't remove this listing — you may not have permission to delete it.");
       return;
     }
 

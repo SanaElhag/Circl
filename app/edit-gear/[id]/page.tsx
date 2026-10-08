@@ -267,8 +267,17 @@ export default function EditGearPage() {
 
       // Delete all listing_images rows (Storage files stay but listing is gone)
       await supabase.from("listing_images").delete().eq("listing_id", id);
-      const { error: delErr } = await supabase.from("listings").delete().eq("id", id);
+      // .select() so we can tell a real delete from RLS silently blocking it
+      // (Supabase reports success with zero rows affected either way)
+      const { data: deletedRows, error: delErr } = await supabase
+        .from("listings")
+        .delete()
+        .eq("id", id)
+        .select("id");
       if (delErr) throw new Error(delErr.message);
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error("Couldn't remove this listing — you may not have permission to delete it.");
+      }
       router.push("/my-gear");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Delete failed.");

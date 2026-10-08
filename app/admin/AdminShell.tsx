@@ -1050,11 +1050,21 @@ function ListingsPanel() {
     await supabase.from("requests").delete().eq("listing_id", id);
     await supabase.from("listing_images").delete().eq("listing_id", id);
 
-    const { error } = await supabase.from("listings").delete().eq("id", id);
+    // .select() so we can tell a real delete from RLS silently blocking it
+    // (Supabase reports success with zero rows affected either way)
+    const { data: deletedRows, error } = await supabase
+      .from("listings")
+      .delete()
+      .eq("id", id)
+      .select("id");
     setConfirmDelete(null);
 
     if (error) {
       alert(`Couldn't remove this listing: ${error.message}`);
+      return;
+    }
+    if (!deletedRows || deletedRows.length === 0) {
+      alert("Couldn't remove this listing — the admin account may not have delete permission on it.");
       return;
     }
     load();

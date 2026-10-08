@@ -310,13 +310,33 @@ function PostCard({ post, currentUserId, onDelete }: {
   }
 
   async function handleDeletePost() {
-    onDelete(post.id); // optimistic
-    await supabase.from("posts").delete().eq("id", post.id);
+    // .select() so we can tell a real delete from RLS silently blocking it
+    // (Supabase reports success with zero rows affected either way)
+    const { data: deletedRows, error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", post.id)
+      .select("id");
+
+    if (error || !deletedRows || deletedRows.length === 0) {
+      alert("Couldn't delete that post. Please try again.");
+      return;
+    }
+    onDelete(post.id);
   }
 
   async function handleDeleteComment(commentId: string) {
-    setComments((prev) => prev.filter((c) => c.id !== commentId)); // optimistic
-    await supabase.from("post_comments").delete().eq("id", commentId);
+    const { data: deletedRows, error } = await supabase
+      .from("post_comments")
+      .delete()
+      .eq("id", commentId)
+      .select("id");
+
+    if (error || !deletedRows || deletedRows.length === 0) {
+      alert("Couldn't delete that comment. Please try again.");
+      return;
+    }
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
   }
 
   async function submitComment() {
