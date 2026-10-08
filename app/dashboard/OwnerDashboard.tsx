@@ -262,9 +262,28 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
 
   async function removeListing(id: string) {
     if (!confirm("Remove this listing? This cannot be undone.")) return;
-    setListingList((prev) => prev.filter((l) => l.id !== id));
+
+    // don't delete out from under a live rental — check before touching anything
+    const { count } = await supabase
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", id)
+      .in("status", ["pending", "accepted"]);
+
+    if (count && count > 0) {
+      alert("This listing has a pending or accepted request on it, so it can't be removed yet. Decline or complete it first.");
+      return;
+    }
+
     await supabase.from("listing_images").delete().eq("listing_id", id);
-    await supabase.from("listings").delete().eq("id", id);
+    const { error } = await supabase.from("listings").delete().eq("id", id);
+
+    if (error) {
+      alert(`Couldn't remove this listing: ${error.message}`);
+      return;
+    }
+
+    setListingList((prev) => prev.filter((l) => l.id !== id));
   }
 
   function handleStatusChange(id: string, status: "accepted" | "declined") {

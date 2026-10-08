@@ -1039,8 +1039,24 @@ function ListingsPanel() {
   }, [load]);
 
   async function remove(id: string) {
-    await supabase.from("listings").delete().eq("id", id);
+    // clear out everything that points at this listing before the listing
+    // itself, in dependency order, so the delete doesn't fail on an fk
+    const { data: reqRows } = await supabase.from("requests").select("id").eq("listing_id", id);
+    const requestIds = (reqRows ?? []).map((r) => r.id);
+    if (requestIds.length > 0) {
+      await supabase.from("messages").delete().in("request_id", requestIds);
+    }
+    await supabase.from("ratings").delete().eq("listing_id", id);
+    await supabase.from("requests").delete().eq("listing_id", id);
+    await supabase.from("listing_images").delete().eq("listing_id", id);
+
+    const { error } = await supabase.from("listings").delete().eq("id", id);
     setConfirmDelete(null);
+
+    if (error) {
+      alert(`Couldn't remove this listing: ${error.message}`);
+      return;
+    }
     load();
   }
 
