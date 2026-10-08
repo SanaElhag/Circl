@@ -4,6 +4,7 @@ import "./globals.css";
 import TopNav from "./components/TopNav";
 import Footer from "./components/Footer";
 import MobileBottomNav from "./components/MobileBottomNav";
+import PostGearFab from "./components/PostGearFab";
 import CookieConsent from "./components/CookieConsent";
 
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="min-h-screen">{children}</main>
         <Footer />
         <MobileBottomNav />
+        <PostGearFab />
         <CookieConsent />
       </body>
     </html>
