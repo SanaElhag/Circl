@@ -254,9 +254,19 @@ export default function EditGearPage() {
     if (deleteConfirm !== "DELETE") return;
     setDeleting(true);
     try {
+      // don't delete out from under a live rental — check before touching anything
+      const { count } = await supabase
+        .from("requests")
+        .select("id", { count: "exact", head: true })
+        .eq("listing_id", id)
+        .in("status", ["pending", "accepted"]);
+
+      if (count && count > 0) {
+        throw new Error("This listing has a pending or accepted request on it, so it can't be removed yet. Decline or complete it first.");
+      }
+
       // Delete all listing_images rows (Storage files stay but listing is gone)
       await supabase.from("listing_images").delete().eq("listing_id", id);
-      // Delete the listing (cascades to requests)
       const { error: delErr } = await supabase.from("listings").delete().eq("id", id);
       if (delErr) throw new Error(delErr.message);
       router.push("/my-gear");
