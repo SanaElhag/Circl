@@ -225,8 +225,22 @@ export default function AccountSettingsPage() {
   async function handleDeleteAccount() {
     if (deleteConfirm !== "DELETE") return;
     setDeleting(true);
-    // In production you'd call a server action / edge function to fully delete.
-    // Here we sign out and let the user know to contact support.
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setDeleting(false); return; }
+
+    const res = await fetch("/api/account/delete", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      showToast(body.error ?? "Couldn't delete your account. Please try again.", "error");
+      setDeleting(false);
+      return;
+    }
+
     await supabase.auth.signOut();
     router.push("/?deleted=true");
   }
