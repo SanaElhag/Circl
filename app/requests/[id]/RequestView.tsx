@@ -304,6 +304,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
   const [messages,       setMessages]       = useState<Message[]>(initialMessages);
   const [text,           setText]           = useState("");
   const [sending,        setSending]        = useState(false);
+  const [sendError,      setSendError]      = useState<string | null>(null);
   const [pendingFile,    setPendingFile]    = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -370,6 +371,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
   async function sendMessage() {
     if ((!text.trim() && !pendingFile) || sending) return;
     setSending(true);
+    setSendError(null);
 
     let attachmentUrl: string | null = null;
     if (pendingFile) {
@@ -403,8 +405,11 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
 
     const { error: msgErr } = await supabase.from("messages").insert(msgPayload);
     if (msgErr) {
-      // Roll back optimistic message on failure
+      // Roll back optimistic message on failure, and give the text back
+      // instead of just silently losing what they typed
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setText(optimistic.content);
+      setSendError(msgErr.message || "Couldn't send that message. Please try again.");
       setSending(false);
       return;
     }
@@ -497,6 +502,9 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
       )}
 
       {/* Input */}
+      {sendError && (
+        <p className="px-5 pt-2 text-xs text-red-500">{sendError}</p>
+      )}
       <div className="px-4 py-3 border-t border-gray-100 flex gap-2 items-center">
         <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx" className="hidden" onChange={handleFileChange} />
         <button
@@ -512,7 +520,7 @@ function MessageThread({ requestId, currentUserId, otherUserId, senderName, init
           type="text"
           placeholder="Type a message..."
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); setSendError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }}}
           className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-sm outline-none border border-transparent focus:border-[#143D60] transition-colors duration-200 placeholder-gray-300"
         />

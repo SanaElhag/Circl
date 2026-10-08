@@ -12,6 +12,13 @@ export function apiError(err: unknown, context: string) {
     );
   }
 
+  if (err instanceof Error && err.message === "SUPABASE_SERVICE_ROLE_KEY is not set") {
+    return NextResponse.json(
+      { error: "This isn't set up yet. Please try again later." },
+      { status: 503 }
+    );
+  }
+
   // stripe's own error messages are fine to show to users, pass those through
   if (err && typeof err === "object" && "type" in err && String(err.type).startsWith("Stripe")) {
     const message = "message" in err && typeof err.message === "string" ? err.message : undefined;

@@ -24,7 +24,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const supabase = supabaseServiceRole();
+  let supabase: ReturnType<typeof supabaseServiceRole>;
+  try {
+    supabase = supabaseServiceRole();
+  } catch (err) {
+    console.error("[api] stripe webhook: service role not configured:", err);
+    return NextResponse.json({ error: "Not configured" }, { status: 500 });
+  }
 
   try {
     switch (event.type) {

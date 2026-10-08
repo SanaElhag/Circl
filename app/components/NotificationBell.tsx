@@ -3,13 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import { NOTIFICATION_ICONS, NOTIFICATION_COLORS } from "@/lib/notifications";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const DROPDOWN_LIMIT = 5;
 
@@ -203,13 +198,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
         <button
           onClick={() => { setOpen((v) => !v); if (!open) loadNotifications(); }}
           title="Notifications"
-          className="relative flex items-center justify-center w-9 h-9 rounded-xl text-gray-400 hover:text-[#143D60] hover:bg-gray-50 transition-all duration-200"
+          className="relative flex items-center justify-center w-11 h-11 rounded-xl text-gray-500 hover:text-[#143D60] hover:bg-gray-50 transition-all duration-200"
         >
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             {unreadCount > 0 && (
-              <circle cx="18" cy="5" r="3.5" fill="#ef4444" stroke="white" strokeWidth="1.5"/>
+              <circle cx="18.5" cy="4.5" r="4" fill="#ef4444" stroke="white" strokeWidth="1.5"/>
             )}
           </svg>
         </button>
