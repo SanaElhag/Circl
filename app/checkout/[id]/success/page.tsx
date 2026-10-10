@@ -44,7 +44,7 @@ function SuccessContent() {
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-2">Request Sent</p>
             <h1 className="text-3xl font-bold text-[#143D60] tracking-tight mb-3">You&apos;re all set!</h1>
             <p className="text-gray-500 leading-relaxed">
-              Your rental request has been sent to the owner. You&apos;ll be notified as soon as they respond — typically within 24 hours.
+              Your rental request has been sent to the owner. You&apos;ll be notified as soon as they respond, typically within 24 hours.
             </p>
           </div>
 
@@ -75,7 +75,7 @@ function SuccessContent() {
 
             {!paid && (
               <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
-                Online payment isn&apos;t set up for this listing yet — this amount isn&apos;t charged through Circl. Arrange payment with the owner directly once they accept.
+                Online payment isn&apos;t set up for this listing yet. This amount isn&apos;t charged through Circl. Arrange payment with the owner directly once they accept.
               </p>
             )}
 

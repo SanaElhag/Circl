@@ -24,7 +24,7 @@ export const sections = [
         items: [
           "Full name and email address when you register;",
           "Profile photo (if provided); and",
-          "Password (stored in encrypted form — we never store plaintext passwords).",
+          "Password (stored in encrypted form, we never store plaintext passwords).",
         ],
       },
       {
@@ -88,7 +88,7 @@ export const sections = [
       },
       {
         heading: "Service Providers",
-        body: "We work with trusted third-party providers to operate the Platform, including cloud hosting (Supabase) and payment processing (Stripe). These providers are contractually bound to protect your information and may only use it to perform services on our behalf. We don't currently use any analytics provider — see Section 8.",
+        body: "We work with trusted third-party providers to operate the Platform, including cloud hosting (Supabase) and payment processing (Stripe). These providers are contractually bound to protect your information and may only use it to perform services on our behalf. We don't currently use any analytics provider, see Section 8.",
       },
       {
         heading: "Legal Authorities",
@@ -120,11 +120,11 @@ export const sections = [
     title: "6. Your Rights",
     intro: "Under PIPEDA and BC PIPA, you have the right to:",
     items: [
-      "Access — Request a copy of the personal information we hold about you;",
-      "Correction — Request that we correct inaccurate or incomplete information;",
-      "Withdrawal of Consent — Withdraw consent to our use of your information at any time, subject to legal or contractual restrictions;",
-      "Deletion — Request deletion of your personal information, subject to our retention obligations; and",
-      "Complaint — Lodge a complaint with the Office of the Privacy Commissioner of Canada (OPC) or the BC Information and Privacy Commissioner if you believe your privacy rights have been violated.",
+      "Access: Request a copy of the personal information we hold about you;",
+      "Correction: Request that we correct inaccurate or incomplete information;",
+      "Withdrawal of Consent: Withdraw consent to our use of your information at any time, subject to legal or contractual restrictions;",
+      "Deletion: Request deletion of your personal information, subject to our retention obligations; and",
+      "Complaint: Lodge a complaint with the Office of the Privacy Commissioner of Canada (OPC) or the BC Information and Privacy Commissioner if you believe your privacy rights have been violated.",
     ],
     footer: `To exercise any of these rights, please contact us at ${CONTACT_EMAIL}. We will respond to your request within 30 days as required by law.`,
   },
@@ -148,7 +148,7 @@ export const sections = [
     title: "8. Cookies & Local Storage",
     paragraphs: [
       "We don't currently use tracking or analytics cookies. Staying signed in is handled with your browser's local storage rather than a cookie, and it's required for the Platform to function.",
-      "See our Cookie Policy (linked in the footer) for the full, current picture — we'll update it, and ask again, before adding anything like analytics.",
+      "See our Cookie Policy (linked in the footer) for the full, current picture. We'll update it, and ask again, before adding anything like analytics.",
     ],
   },
   {
@@ -192,7 +192,7 @@ export const sections = [
       "If you have questions, concerns, or requests regarding this Privacy Policy or our handling of your personal information, please contact our Privacy Officer at:",
     ],
     address: {
-      name: `${COMPANY_NAME} — Privacy Officer`,
+      name: `${COMPANY_NAME}, Privacy Officer`,
       location: "British Columbia, Canada",
       email: CONTACT_EMAIL,
     },

@@ -169,7 +169,7 @@ export default function BookingCard({
       <p className="text-xs text-gray-400 text-center">
         {ownerStripeEnabled
           ? "Your card is authorized now and only charged if the owner accepts."
-          : "Online payment isn't set up for this listing yet — you'll arrange payment with the owner directly once they accept."}
+          : "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept."}
       </p>
     </div>
   );

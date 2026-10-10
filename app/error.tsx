@@ -26,7 +26,7 @@ export default function ErrorBoundary({
           Something went wrong.
         </h1>
         <p className="text-sm text-gray-500 leading-relaxed mb-10">
-          That&apos;s on us, not you. Try again, or head back home — nothing you
+          That&apos;s on us, not you. Try again, or head back home. Nothing you
           were doing has been lost.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

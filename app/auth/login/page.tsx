@@ -71,7 +71,7 @@ function LoginForm() {
             Your gear,<br />your community.
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-xs">
-            Sign in to manage your rentals, messages, and listings — all in one place.
+            Sign in to manage your rentals, messages, and listings, all in one place.
           </p>
         </div>
 
@@ -146,7 +146,7 @@ function LoginForm() {
                     type="button"
                     onClick={async () => {
                       await supabase.auth.resend({ type: "signup", email: email.trim().toLowerCase() });
-                      setError("Verification email resent — check your inbox.");
+                      setError("Verification email resent. Check your inbox.");
                     }}
                     className="ml-2 underline font-semibold hover:no-underline"
                   >

@@ -118,7 +118,7 @@ export default function PhotoGallery({ photos, title }: { photos: Photo[]; title
           >
             <img
               src={photos[lightboxIndex].url}
-              alt={`${title} — photo ${lightboxIndex + 1}`}
+              alt={`${title}, photo ${lightboxIndex + 1}`}
               className="w-full h-full object-contain max-h-[85vh] rounded-xl"
             />
           </div>

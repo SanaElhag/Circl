@@ -72,10 +72,10 @@ function initials(name: string) {
 
 const STATUS_META: Record<RequestStatus, { label: string; color: string; description: string }> = {
   pending:   { label: "Pending",    color: "bg-yellow-50 text-yellow-700 border-yellow-200",   description: "Waiting for the owner to respond" },
-  accepted:  { label: "Accepted",   color: "bg-blue-50 text-blue-700 border-blue-200",         description: "Accepted — waiting for gear delivery" },
+  accepted:  { label: "Accepted",   color: "bg-blue-50 text-blue-700 border-blue-200",         description: "Accepted, waiting for gear delivery" },
   declined:  { label: "Declined",   color: "bg-red-50 text-red-600 border-red-200",            description: "This request was declined" },
   active:    { label: "Active",     color: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",    description: "Rental in progress" },
-  completed: { label: "Completed",  color: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",    description: "Gear returned — rental complete" },
+  completed: { label: "Completed",  color: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",    description: "Gear returned, rental complete" },
   closed:    { label: "Closed",     color: "bg-gray-50 text-gray-500 border-gray-200",         description: "Rental closed" },
   cancelled: { label: "Cancelled",  color: "bg-gray-50 text-gray-500 border-gray-200",         description: "This request was cancelled" },
 };
@@ -565,7 +565,7 @@ function PriceBreakdown({ pricePerDay, days, paymentStatus }: { pricePerDay: num
         ))}
         {!paid && (
           <p className="text-xs text-gray-400">
-            Online payment isn&apos;t set up for this listing — arrange payment with the owner directly.
+            Online payment isn&apos;t set up for this listing. Arrange payment with the owner directly.
           </p>
         )}
         <div className="h-px bg-gray-100" />
@@ -597,8 +597,8 @@ function OwnerEarningsCard({ pricePerDay, days, paymentStatus }: { pricePerDay: 
         </div>
         <p className="text-xs text-gray-400">
           {paid
-            ? "The platform fee and taxes are paid by the renter on top of this — you keep 100% of your listing price."
-            : "Online payment isn't set up for this listing — collect this directly from the renter."}
+            ? "The platform fee and taxes are paid by the renter on top of this. You keep 100% of your listing price."
+            : "Online payment isn't set up for this listing. Collect this directly from the renter."}
         </p>
         <div className="h-px bg-gray-100" />
         <div className="flex justify-between items-baseline">
@@ -944,7 +944,7 @@ export default function RequestView({
 
                 {status === "accepted" && request.owner_delivered && !request.requester_received && (
                   <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-3 text-center">
-                    <p className="text-xs font-semibold text-yellow-700">Delivered — waiting for renter to confirm receipt</p>
+                    <p className="text-xs font-semibold text-yellow-700">Delivered, waiting for renter to confirm receipt</p>
                   </div>
                 )}
 
@@ -991,7 +991,7 @@ export default function RequestView({
 
                 {status === "accepted" && !request.owner_delivered && (
                   <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-center">
-                    <p className="text-xs font-semibold text-blue-700">Accepted — waiting for owner to deliver gear</p>
+                    <p className="text-xs font-semibold text-blue-700">Accepted, waiting for owner to deliver gear</p>
                   </div>
                 )}
 
@@ -1004,7 +1004,7 @@ export default function RequestView({
 
                 {status === "active" && (
                   <div className="rounded-xl bg-[#F0F7F4] border border-[#A0C878] p-3 text-center">
-                    <p className="text-xs font-semibold text-[#27667B]">Rental active — enjoy your adventure!</p>
+                    <p className="text-xs font-semibold text-[#27667B]">Rental active, enjoy your adventure!</p>
                   </div>
                 )}
 

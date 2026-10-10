@@ -211,7 +211,7 @@ export default async function HomePage() {
 
           {featured.length === 0 ? (
             <div className="text-center py-20 rounded-2xl border border-dashed border-[#D4C9B0] bg-[#FAF7F2]">
-              <p className="text-[#6B5E4E] text-sm mb-5">No listings yet — check back soon.</p>
+              <p className="text-[#6B5E4E] text-sm mb-5">No listings yet, check back soon.</p>
               <Link
                 href="/post-gear"
                 className="inline-block rounded-full bg-[#143D60] px-7 py-3.5 text-[13px] font-semibold text-white hover:bg-[#27667B] transition-colors duration-200"

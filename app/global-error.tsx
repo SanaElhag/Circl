@@ -34,7 +34,7 @@ export default function GlobalError({
               Something went wrong.
             </h1>
             <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.6, marginBottom: 32 }}>
-              The page couldn&apos;t load. Try refreshing — if it keeps happening, come back in a bit.
+              The page couldn&apos;t load. Try refreshing, and if it keeps happening, come back in a bit.
             </p>
             <button
               onClick={reset}

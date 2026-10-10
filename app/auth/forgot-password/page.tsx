@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
               </p>
               <p className="font-bold text-[#143D60] mb-6">{email.trim().toLowerCase()}</p>
               <p className="text-sm text-gray-500 leading-relaxed mb-8">
-                we&apos;ve sent a password reset link. It expires in an hour — check your
+                we&apos;ve sent a password reset link. It expires in an hour, so check your
                 spam folder if it doesn&apos;t show up.
               </p>
               <Link
