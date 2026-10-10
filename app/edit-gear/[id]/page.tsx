@@ -90,7 +90,8 @@ export default function EditGearPage() {
   });
   const [images, setImages]       = useState<ImageSlot[]>([]);
   // Track which existing images were removed so we can delete them on save
-  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+  // (keep the full image, not just the id, so we can also clean up its Storage file)
+  const [removedImages, setRemovedImages] = useState<ExistingImage[]>([]);
 
   // ── Auth + fetch listing ──────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ export default function EditGearPage() {
   function removeImage(index: number) {
     const slot = images[index];
     if (slot.kind === "existing") {
-      setRemovedImageIds((prev) => [...prev, slot.id]);
+      setRemovedImages((prev) => [...prev, slot]);
     } else {
       URL.revokeObjectURL(slot.preview);
     }
@@ -198,12 +199,25 @@ export default function EditGearPage() {
 
     setSaving(true);
     try {
-      // 1. Delete removed images from Storage + DB
-      for (const imgId of removedImageIds) {
-        await supabase.from("listing_images").delete().eq("id", imgId);
-        // Storage path is embedded in the URL — extract and delete
+      // 1. Delete removed images from the DB — .select() so we can tell a
+      // real delete from RLS silently blocking it (Supabase reports success
+      // with zero rows affected either way)
+      for (const img of removedImages) {
+        const { data: deletedRows, error: delErr } = await supabase
+          .from("listing_images")
+          .delete()
+          .eq("id", img.id)
+          .select("id");
+        if (delErr || !deletedRows || deletedRows.length === 0) {
+          throw new Error("Couldn't remove a photo — you may not have permission to delete it. Please try again.");
+        }
+
+        // Best-effort cleanup of the actual file in Storage.
         // URL shape: .../storage/v1/object/public/gear-images/{path}
-        // We attempt deletion but don't fail if it errors
+        const path = img.url.split("/gear-images/")[1]?.split("?")[0];
+        if (path) {
+          await supabase.storage.from("gear-images").remove([decodeURIComponent(path)]);
+        }
       }
 
       // 2. Upload new local images
