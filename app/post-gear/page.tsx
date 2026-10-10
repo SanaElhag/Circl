@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -92,19 +93,20 @@ export default function PostGearPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
 
+    // Reset input so same file can be re-added after removal
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     const remaining = MAX_PHOTOS - photos.length;
-    const toAdd = files.slice(0, remaining).map((file) => ({
+    const normalized = await Promise.all(files.slice(0, remaining).map(normalizeImageFile));
+    const toAdd = normalized.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
     }));
     setPhotos((prev) => [...prev, ...toAdd]);
-
-    // Reset input so same file can be re-added after removal
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removePhoto(index: number) {
@@ -259,7 +261,7 @@ export default function PostGearPage() {
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center transition-opacity duration-200 shadow"
                   >
                     &times;
                   </button>
@@ -295,7 +297,7 @@ export default function PostGearPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
               multiple
               onChange={handleFileChange}
               className="hidden"
