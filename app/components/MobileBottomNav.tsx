@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   {
@@ -58,11 +53,13 @@ const navItems = [
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkUnread() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
+      setUserId(session.user.id);
       // Count messages from others in the last 7 days as proxy for unread
       const uid = session.user.id;
       const { data: requests } = await supabase
@@ -96,6 +93,13 @@ export default function MobileBottomNav() {
               ? pathname === "/"
               : pathname.startsWith(item.href);
 
+            // the real profile page is /profile/[id] - there's no plain
+            // /profile route, so this has to resolve to an actual id (or
+            // send a signed-out tap to login) instead of the bare path
+            const href = item.label === "Profile"
+              ? (userId ? `/profile/${userId}` : "/auth/login?redirect=/profile")
+              : item.href;
+
             // Hero "Post" button — slightly elevated circle
             if (item.isHero) {
               return (
@@ -121,11 +125,11 @@ export default function MobileBottomNav() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
                 className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors duration-200"
               >
                 <span className={`transition-colors duration-200 ${
-                  isActive ? "text-[#143D60]" : "text-gray-300"
+                  isActive ? "text-[#143D60]" : "text-gray-500"
                 }`}>
                   {item.href === "/messages" ? (
                     <div className="relative">
@@ -139,7 +143,7 @@ export default function MobileBottomNav() {
                   ) : item.icon}
                 </span>
                 <span className={`text-[9px] font-medium tracking-wide transition-colors duration-200 ${
-                  isActive ? "text-[#143D60]" : "text-gray-300"
+                  isActive ? "text-[#143D60]" : "text-gray-500"
                 }`}>
                   {item.label}
                 </span>

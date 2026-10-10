@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -60,7 +60,7 @@ function NotifToast({ notif, onDismiss, onNavigate }: {
         </button>
         <button
           onClick={onDismiss}
-          className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0 -mt-0.5"
+          className="flex items-center justify-center w-8 h-8 -mr-1.5 -mt-1 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -88,6 +88,11 @@ function NotifToast({ notif, onDismiss, onNavigate }: {
 export default function NotificationBell({ userId }: { userId: string }) {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // TopNav mounts this twice (one for the desktop row, one for mobile) and
+  // CSS only hides one of them - both are still in the DOM either way, so
+  // without a per-instance id they'd both try to open a realtime channel
+  // with the same name and Supabase throws on the second one
+  const instanceId = useId();
 
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -125,7 +130,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   useEffect(() => {
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`notifications:${userId}:${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -146,7 +151,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId]);
+  }, [userId, instanceId]);
 
   // ── Close on outside click ─────────────────────────────────────────────────
 
@@ -210,8 +215,12 @@ export default function NotificationBell({ userId }: { userId: string }) {
         </button>
 
         {/* ── Dropdown ── */}
+        {/* fixed + inset margins on mobile so it can't run off-screen regardless
+            of where the bell sits (it's no longer always flush with the right
+            edge now that it also shows next to the mobile hamburger); back to
+            a precisely-anchored panel from sm: up */}
         {open && (
-          <div className="absolute top-[calc(100%+10px)] right-0 w-80 bg-white border border-gray-100 shadow-2xl rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="fixed top-16 left-4 right-4 sm:absolute sm:top-[calc(100%+10px)] sm:right-0 sm:left-auto sm:w-80 bg-white border border-gray-100 shadow-2xl rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
 
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
