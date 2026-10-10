@@ -11,7 +11,7 @@ export default async function CommunityPage() {
     .select(`
       id, content, media_urls, link_url, link_title, is_public, created_at,
       users!posts_user_id_fkey ( id, full_name ),
-      post_likes ( user_id ),
+      post_likes ( user_id, users!post_likes_user_id_fkey ( id, full_name ) ),
       post_comments (
         id, content, created_at,
         users!post_comments_user_id_fkey ( id, full_name )
