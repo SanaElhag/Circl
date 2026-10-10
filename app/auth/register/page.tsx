@@ -15,7 +15,7 @@ function isUFVEmail(email: string) {
   return ALLOWED_DOMAINS.some((d) => lower.endsWith(`@${d}`));
 }
 
-function validate(fullName: string, email: string, password: string, confirmPassword: string): string | null {
+function validate(fullName: string, email: string, password: string, confirmPassword: string, agreedToTerms: boolean): string | null {
   if (!fullName.trim())               return "Please enter your full name.";
   if (!email.trim())                  return "Please enter your email address.";
   if (!isUFVEmail(email))             return "Please use your UFV email address (@student.ufv.ca or @ufv.ca).";
@@ -25,6 +25,7 @@ function validate(fullName: string, email: string, password: string, confirmPass
     return rule ? `Password needs ${rule.label.toLowerCase()}.` : "Please choose a stronger password.";
   }
   if (password !== confirmPassword)   return "The two passwords don't match.";
+  if (!agreedToTerms)                 return "Please agree to the Terms of Service and Privacy Policy.";
   return null;
 }
 
@@ -37,6 +38,7 @@ export default function RegisterPage() {
   const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword,    setShowPassword]    = useState(false);
+  const [agreedToTerms,   setAgreedToTerms]   = useState(false);
   const [error,           setError]           = useState<string | null>(null);
   const [loading,         setLoading]         = useState(false);
   const [submitted,       setSubmitted]       = useState(false);
@@ -56,7 +58,7 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const err = validate(fullName, email, password, confirmPassword);
+    const err = validate(fullName, email, password, confirmPassword, agreedToTerms);
     if (err) { setError(err); return; }
     setLoading(true);
     try {
@@ -84,7 +86,7 @@ export default function RegisterPage() {
     }
   }
 
-  const filled = fullName.trim() !== "" && email.trim() !== "" && password !== "" && confirmPassword !== "";
+  const filled = fullName.trim() !== "" && email.trim() !== "" && password !== "" && confirmPassword !== "" && agreedToTerms;
 
   /* ── Confirmation screen ── */
   if (submitted) {
@@ -269,6 +271,25 @@ export default function RegisterPage() {
                 <p className="text-[11px] text-red-500">Passwords don&apos;t match.</p>
               )}
             </div>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#143D60] focus:ring-[#27667B] cursor-pointer shrink-0"
+              />
+              <span className="text-xs text-gray-500 leading-relaxed">
+                I agree to Circl&apos;s{" "}
+                <Link href="/terms" target="_blank" className="text-[#27667B] underline underline-offset-2 hover:text-[#143D60]">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" target="_blank" className="text-[#27667B] underline underline-offset-2 hover:text-[#143D60]">
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
 
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
