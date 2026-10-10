@@ -50,7 +50,7 @@ export default function ListYourGearPage() {
               {[
                 { title: "You control everything", body: "Review every request before accepting. No surprises." },
                 { title: "Set your own price",      body: "You decide the daily rate. Change it any time." },
-                { title: "You arrange pickup",      body: "Agree on a time and place with the renter that works for both of you." },
+                { title: "You arrange pickup",      body: "Agree on a time and place with the borrower that works for both of you." },
               ].map((item) => (
                 <div key={item.title} className="bg-[#F9FAFB] rounded-xl p-4">
                   <p className="text-sm font-semibold text-[#143D60] mb-1">{item.title}</p>
@@ -76,7 +76,7 @@ export default function ListYourGearPage() {
               </div>
               <h2 className="text-xl font-bold text-[#143D60]">Stripe-powered payouts</h2>
               <p className="text-sm text-gray-500 mt-1 leading-relaxed max-w-md">
-                Connect a Stripe account so renters can pay upfront and funds land in your account
+                Connect a Stripe account so borrowers can pay upfront and funds land in your account
                 as soon as you accept a request. Takes a couple minutes.
               </p>
             </div>

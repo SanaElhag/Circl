@@ -588,7 +588,7 @@ function PriceBreakdown({ pricePerDay, days, paymentStatus }: { pricePerDay: num
 // ─── Earnings card (owner view) ───────────────────────────────────────────────
 
 function OwnerEarningsCard({ pricePerDay, days, paymentStatus }: { pricePerDay: number; days: number; paymentStatus: string | null }) {
-  // renter pays the fee/tax on top, owner just gets the plain subtotal - see lib/pricing.ts
+  // borrower pays the fee/tax on top, owner just gets the plain subtotal - see lib/pricing.ts
   const { subtotal } = computeAmounts(pricePerDay, days);
   const paid = paymentStatus !== "unpaid" && paymentStatus !== null;
 
@@ -604,8 +604,8 @@ function OwnerEarningsCard({ pricePerDay, days, paymentStatus }: { pricePerDay: 
         </div>
         <p className="text-xs text-gray-400">
           {paid
-            ? "The platform fee and taxes are paid by the renter on top of this. You keep 100% of your listing price."
-            : "Online payment isn't set up for this listing. Collect this directly from the renter."}
+            ? "The platform fee and taxes are paid by the borrower on top of this. You keep 100% of your listing price."
+            : "Online payment isn't set up for this listing. Collect this directly from the borrower."}
         </p>
         <div className="h-px bg-gray-100" />
         <div className="flex justify-between items-baseline">
@@ -951,7 +951,7 @@ export default function RequestView({
 
                 {status === "accepted" && request.owner_delivered && !request.requester_received && (
                   <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-3 text-center">
-                    <p className="text-xs font-semibold text-yellow-700">Delivered, waiting for renter to confirm receipt</p>
+                    <p className="text-xs font-semibold text-yellow-700">Delivered, waiting for borrower to confirm receipt</p>
                   </div>
                 )}
 

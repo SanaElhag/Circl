@@ -231,6 +231,7 @@ export default function DashboardShell() {
             listings={data.listings}
             requests={data.ownerRequests}
             ownerRatings={data.ownerRatings}
+            ratedRequestIds={data.ratedRequestIds}
             userId={data.userId}
             stripeChargesEnabled={data.stripeChargesEnabled}
             initialTab={ownerTab}

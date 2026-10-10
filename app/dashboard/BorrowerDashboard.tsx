@@ -108,7 +108,7 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
 
   async function handleSubmit() {
     if (!gearRating)  return setError("Please rate the gear.");
-    if (!ownerRating) return setError("Please rate the owner.");
+    if (!ownerRating) return setError("Please rate the gear owner.");
     setSaving(true);
 
     const { error: err } = await supabase.from("ratings").insert({
@@ -145,7 +145,7 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
               onChange={(e) => setGearComment(e.target.value)}
               rows={2}
               maxLength={300}
-              placeholder="Condition, what was included, anything useful for the next renter..."
+              placeholder="Condition, what was included, anything useful for the next borrower..."
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#143D60] transition-colors duration-200 resize-none placeholder-gray-300 bg-white"
             />
           </div>
@@ -153,12 +153,12 @@ function RatingModal({ request, userId, onClose, onSubmit }: {
 
         <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
           <p className="text-sm font-semibold text-[#143D60]">
-            How was {owner?.full_name ?? "the owner"}?
+            How was {owner?.full_name ?? "the gear owner"}?
           </p>
           <StarPicker value={ownerRating} onChange={setOwnerRating} />
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              Owner comment <span className="text-gray-300 normal-case font-normal">(optional)</span>
+              Gear owner comment <span className="text-gray-300 normal-case font-normal">(optional)</span>
             </label>
             <textarea
               value={ownerComment}
@@ -228,7 +228,7 @@ function HistoryCard({ r, canRate, rated, onRate }: {
         {total && <p className="text-sm font-bold text-[#143D60] mt-1">${total.toFixed(2)}</p>}
         {owner && (
           <Link href={`/profile/${owner.id}`} className="text-xs text-[#27667B] mt-1.5 inline-block hover:underline">
-            Owner: {owner.full_name}
+            Gear owner: {owner.full_name}
           </Link>
         )}
 

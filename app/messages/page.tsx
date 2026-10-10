@@ -216,7 +216,7 @@ export default function MessagesPage() {
           <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B] mb-2">Inbox</p>
           <h1 className="text-4xl font-bold tracking-tight text-[#143D60]">Messages</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Conversations with owners and renters about active requests.
+            Conversations with gear owners and borrowers about active requests.
           </p>
         </div>
 

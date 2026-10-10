@@ -34,6 +34,17 @@ function unwrapUser(u: ListingUser | ListingUser[] | null | undefined): ListingU
   return Array.isArray(u) ? (u[0] ?? null) : u;
 }
 
+// A rental counts as done once it's explicitly completed/closed, or once an
+// accepted/active rental's end date has passed - mirrors the borrower side's
+// groupForRequest so both dashboards agree on when a rental is "over"
+function isRentalDone(r: OwnerRequest): boolean {
+  if (r.status === "completed" || r.status === "closed") return true;
+  if (r.status === "accepted" || r.status === "active") {
+    return !!r.end_date && new Date(r.end_date) < new Date();
+  }
+  return false;
+}
+
 // ── Chart ─────────────────────────────────────────────────────────────────────
 
 function EarningsChart({ monthlyData }: { monthlyData: number[] }) {
@@ -74,11 +85,111 @@ function EarningsChart({ monthlyData }: { monthlyData: number[] }) {
   );
 }
 
+// ── Star picker ───────────────────────────────────────────────────────────────
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button key={s} type="button"
+          onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)}
+          onClick={() => onChange(s)}
+          className="transition-transform duration-100 hover:scale-110"
+        >
+          <svg className={`w-7 h-7 ${(hover || value) >= s ? "text-[#DDEB9D]" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Rate borrower modal ──────────────────────────────────────────────────────
+
+function RateBorrowerModal({ request, userId, onClose, onSubmit }: {
+  request: OwnerRequest;
+  userId: string;
+  onClose: () => void;
+  onSubmit: (requestId: string) => void;
+}) {
+  const [borrowerRating,  setBorrowerRating]  = useState(0);
+  const [comment,         setComment]         = useState("");
+  const [saving,          setSaving]          = useState(false);
+  const [error,           setError]           = useState<string | null>(null);
+
+  const listing  = request.listings;
+  const borrower = unwrapUser(request.users);
+
+  async function handleSubmit() {
+    if (!borrowerRating) return setError("Please rate the borrower.");
+    setSaving(true);
+
+    const { error: err } = await supabase.from("ratings").insert({
+      request_id:       request.id,
+      rater_id:         userId,
+      ratee_id:         borrower?.id ?? null,
+      listing_id:       listing?.id ?? null,
+      borrower_rating:  borrowerRating,
+      borrower_comment: comment.trim() || null,
+    });
+    if (err) { setError(err.message); setSaving(false); return; }
+    onSubmit(request.id);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div>
+          <h3 className="font-bold text-[#143D60] text-lg">Rate your borrower</h3>
+          <p className="text-sm text-gray-400 mt-0.5">{listing?.title}</p>
+        </div>
+
+        <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
+          <p className="text-sm font-semibold text-[#143D60]">
+            How was {borrower?.full_name ?? "the borrower"}?
+          </p>
+          <StarPicker value={borrowerRating} onChange={setBorrowerRating} />
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+              Comment <span className="text-gray-300 normal-case font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={2}
+              maxLength={300}
+              placeholder="Communication, how the gear was returned, would you rent to them again?"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#143D60] transition-colors duration-200 resize-none placeholder-gray-300 bg-white"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose}
+            className="flex-1 border border-gray-200 text-gray-500 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors duration-200 text-sm">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={saving}
+            className={`flex-1 font-bold py-2.5 rounded-xl text-sm transition-all duration-200 ${saving ? "bg-gray-100 text-gray-400" : "bg-[#143D60] text-white hover:bg-[#27667B]"}`}>
+            {saving ? "Submitting..." : "Submit rating"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Request card ──────────────────────────────────────────────────────────────
 
-function RequestCard({ request, onStatusChange }: {
+function RequestCard({ request, onStatusChange, canRate, rated, onRate }: {
   request: OwnerRequest;
   onStatusChange: (id: string, status: "accepted" | "declined") => void;
+  canRate: boolean;
+  rated: boolean;
+  onRate: () => void;
 }) {
   const [comment, setComment] = useState(request.owner_comment ?? "");
   const [saving,  setSaving]  = useState(false);
@@ -170,7 +281,7 @@ function RequestCard({ request, onStatusChange }: {
               </div>
               <div>
                 <Link href={`/profile/${requester?.id}`} className="text-xs font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200">
-                  {requester?.full_name ?? "Unknown renter"}
+                  {requester?.full_name ?? "Unknown borrower"}
                 </Link>
                 <p className="text-[10px] text-gray-400">Requested {fmtDate(request.created_at)}</p>
               </div>
@@ -182,11 +293,11 @@ function RequestCard({ request, onStatusChange }: {
           <div className="mt-4 space-y-3">
             <div>
               <label className="block text-xs font-semibold text-[#143D60] mb-1.5">
-                Message to renter <span className="text-gray-400 font-normal">(optional)</span>
+                Message to borrower <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <textarea value={comment} onChange={(e) => setComment(e.target.value)}
                 rows={2} maxLength={300}
-                placeholder="Any details or instructions for the renter..."
+                placeholder="Any details or instructions for the borrower..."
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#143D60] transition-colors duration-200 resize-none placeholder-gray-300"
               />
             </div>
@@ -210,9 +321,18 @@ function RequestCard({ request, onStatusChange }: {
           </div>
         )}
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {canRate && (
+            <button onClick={onRate}
+              className="bg-[#DDEB9D] text-[#143D60] font-bold py-2 px-4 rounded-xl text-xs hover:bg-[#A0C878] transition-colors duration-200">
+              Rate borrower
+            </button>
+          )}
+          {!canRate && rated && (
+            <p className="text-[11px] text-gray-400">Rated, thanks for your feedback</p>
+          )}
           <Link href={`/requests/${request.id}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200">
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#27667B] hover:text-[#143D60] transition-colors duration-200 ml-auto">
             View full request
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -230,10 +350,11 @@ export type OwnerTab = "summary" | "requests" | "listings";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function OwnerDashboard({ listings, requests, ownerRatings, stripeChargesEnabled, initialTab }: {
+export default function OwnerDashboard({ listings, requests, ownerRatings, ratedRequestIds, userId, stripeChargesEnabled, initialTab }: {
   listings: OwnerListing[];
   requests: OwnerRequest[];
   ownerRatings: OwnerRating[];
+  ratedRequestIds: string[];
   userId: string;
   stripeChargesEnabled: boolean;
   initialTab?: OwnerTab;
@@ -243,6 +364,8 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
   const [connecting,  setConnecting]  = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [rated,        setRated]        = useState<Set<string>>(new Set(ratedRequestIds));
+  const [ratingFor,    setRatingFor]    = useState<OwnerRequest | null>(null);
 
   async function handleConnectStripe() {
     setConnecting(true);
@@ -274,6 +397,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
   const EARNING_STATUSES = new Set(["accepted", "active", "completed", "closed"]);
   const accepted         = requestList.filter((r) => EARNING_STATUSES.has(r.status));
   const pendingCount    = requestList.filter((r) => r.status === "pending").length;
+  const unratedCount    = requestList.filter((r) => isRentalDone(r) && !rated.has(r.id)).length;
   const activeListings  = listingList.filter((l) => l.available).length;
   const potentialPerDay = listingList.filter((l) => l.available).reduce((s, l) => s + l.price_per_day, 0);
   const totalEarnings   = accepted.reduce((s, r) => {
@@ -340,6 +464,11 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
     setRequestList((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
   }
 
+  function handleRated(id: string) {
+    setRated((prev) => new Set([...prev, id]));
+    setRatingFor(null);
+  }
+
   const TABS: { key: OwnerTab; label: string; badge?: number }[] = [
     { key: "summary",  label: "Business Summary" },
     { key: "requests", label: "Requests", badge: pendingCount },
@@ -402,7 +531,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
                 </svg>
               </div>
               <p className="font-bold text-[#143D60] mb-1">No requests yet</p>
-              <p className="text-sm text-gray-400">When renters request your gear, they&apos;ll show up here.</p>
+              <p className="text-sm text-gray-400">When borrowers request your gear, they&apos;ll show up here.</p>
             </div>
           )}
 
@@ -417,7 +546,14 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
               return new Date(bDate).getTime() - new Date(aDate).getTime();
             })
             .map((r) => (
-              <RequestCard key={r.id} request={r} onStatusChange={handleStatusChange} />
+              <RequestCard
+                key={r.id}
+                request={r}
+                onStatusChange={handleStatusChange}
+                canRate={isRentalDone(r) && !rated.has(r.id)}
+                rated={rated.has(r.id)}
+                onRate={() => setRatingFor(r)}
+              />
             ))}
         </div>
       )}
@@ -522,7 +658,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
                 <div>
                   <p className="text-sm font-bold text-amber-800">Set up payouts to get paid automatically</p>
                   <p className="text-xs text-amber-600 mt-0.5">
-                    Until then, agree on payment with your renter directly when you accept a request.
+                    Until then, agree on payment with your borrower directly when you accept a request.
                   </p>
                 </div>
                 <button
@@ -575,7 +711,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
                   <p className="text-sm font-bold text-yellow-800">
                     {pendingCount} pending request{pendingCount > 1 ? "s" : ""}
                   </p>
-                  <p className="text-xs text-yellow-600 mt-0.5">Renters are waiting for your response.</p>
+                  <p className="text-xs text-yellow-600 mt-0.5">Borrowers are waiting for your response.</p>
                 </div>
               </div>
               <button onClick={() => setTab("requests")}
@@ -584,7 +720,28 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
               </button>
             </div>
           )}
+
+          {/* Unrated nudge */}
+          {unratedCount > 0 && (
+            <div className="rounded-2xl border border-[#DDEB9D] bg-linear-to-br from-[#FAFFF5] to-white p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-[#143D60]">
+                  {unratedCount} rental{unratedCount > 1 ? "s" : ""} waiting for a rating
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">Let the community know how your borrower was.</p>
+              </div>
+              <button onClick={() => setTab("requests")}
+                className="shrink-0 bg-[#DDEB9D] text-[#143D60] font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#A0C878] transition-colors duration-200">
+                Rate now
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {ratingFor && (
+        <RateBorrowerModal request={ratingFor} userId={userId}
+          onClose={() => setRatingFor(null)} onSubmit={handleRated} />
       )}
     </div>
   );

@@ -55,8 +55,8 @@ interface Listing {
 }
 
 interface Rating {
-  owner_rating: number | null;
-  gear_rating: number | null;
+  rating: number;
+  ratedAs: "gear owner" | "borrower";
   comment: string | null;
   created_at: string;
   rater: { full_name: string } | null;
@@ -135,32 +135,37 @@ export default function ProfilePage() {
 
       setListings(listingData ?? []);
 
-      // Ratings received as owner
+      // Ratings this person received - either as the gear owner (from a
+      // borrower) or as the borrower (from a gear owner), on whichever side
+      // of a rental they were on
       const { data: ratingData } = await supabase
         .from("ratings")
         .select(`
-          owner_rating, gear_rating, comment, created_at,
+          owner_rating, owner_comment, borrower_rating, borrower_comment, created_at,
           users!ratings_rater_id_fkey ( full_name ),
           listings!ratings_listing_id_fkey ( title )
         `)
         .eq("ratee_id", profileId)
         .order("created_at", { ascending: false });
 
-      const normalised = (ratingData ?? []).map((r: {
-        owner_rating: number | null;
-        gear_rating: number | null;
-        comment: string | null;
-        created_at: string;
-        users: { full_name: string } | { full_name: string }[] | null;
-        listings: { title: string } | { title: string }[] | null;
-      }) => ({
-        owner_rating: r.owner_rating,
-        gear_rating: r.gear_rating,
-        comment: r.comment,
-        created_at: r.created_at,
-        rater: r.users ? (Array.isArray(r.users) ? r.users[0] : r.users) : null,
-        listing: r.listings ? (Array.isArray(r.listings) ? r.listings[0] : r.listings) : null,
-      }));
+      const normalised = (ratingData ?? [])
+        .filter((r) => r.owner_rating != null || r.borrower_rating != null)
+        .map((r: {
+          owner_rating: number | null;
+          owner_comment: string | null;
+          borrower_rating: number | null;
+          borrower_comment: string | null;
+          created_at: string;
+          users: { full_name: string } | { full_name: string }[] | null;
+          listings: { title: string } | { title: string }[] | null;
+        }): Rating => ({
+          rating:   r.owner_rating ?? r.borrower_rating ?? 0,
+          ratedAs:  r.owner_rating != null ? "gear owner" : "borrower",
+          comment:  r.owner_rating != null ? r.owner_comment : r.borrower_comment,
+          created_at: r.created_at,
+          rater: r.users ? (Array.isArray(r.users) ? r.users[0] : r.users) : null,
+          listing: r.listings ? (Array.isArray(r.listings) ? r.listings[0] : r.listings) : null,
+        }));
       setRatings(normalised);
 
       setLoading(false);
@@ -219,7 +224,7 @@ export default function ProfilePage() {
 
   const isOwnProfile = currentUser?.id === profileId;
   const avgRating = ratings.length
-    ? ratings.reduce((s, r) => s + (r.owner_rating ?? 0), 0) / ratings.length
+    ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
     : null;
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-CA", {
     month: "long", year: "numeric",
@@ -448,7 +453,7 @@ export default function ProfilePage() {
                 {/* Distribution bars */}
                 <div className="flex-1 w-full space-y-1.5">
                   {[5, 4, 3, 2, 1].map((star) => {
-                    const count = ratings.filter((r) => Math.round(r.owner_rating ?? 0) === star).length;
+                    const count = ratings.filter((r) => Math.round(r.rating) === star).length;
                     const pct = ratings.length ? (count / ratings.length) * 100 : 0;
                     return (
                       <div key={star} className="flex items-center gap-2">
@@ -493,15 +498,14 @@ export default function ProfilePage() {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-[#143D60]">{r.rater?.full_name ?? "Circl Member"}</p>
-                          {r.listing && (
-                            <p className="text-xs text-gray-400 truncate max-w-[180px]">re: {r.listing.title}</p>
-                          )}
+                          <p className="text-xs text-gray-400 truncate max-w-[180px]">
+                            Rated as {r.ratedAs}
+                            {r.listing && ` · re: ${r.listing.title}`}
+                          </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {r.owner_rating !== null && (
-                          <StarRow value={r.owner_rating} size="sm" />
-                        )}
+                        <StarRow value={r.rating} size="sm" />
                         <p className="text-[10px] text-gray-400">
                           {new Date(r.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                         </p>

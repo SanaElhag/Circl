@@ -419,7 +419,7 @@ export default function PostGearPage() {
                 <span className="text-gray-400 font-normal ml-1">(optional)</span>
               </label>
               <textarea
-                placeholder="Describe the gear, what's included, any quirks the renter should know..."
+                placeholder="Describe the gear, what's included, any quirks the borrower should know..."
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 rows={4}

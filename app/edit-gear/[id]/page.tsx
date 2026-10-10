@@ -348,7 +348,7 @@ export default function EditGearPage() {
                 <p className="font-bold text-[#143D60]">Listing status</p>
                 <p className="text-sm text-gray-400 mt-0.5">
                   {form.available
-                    ? "Visible in browse, renters can request this gear"
+                    ? "Visible in browse, borrowers can request this gear"
                     : "Hidden from browse, no new requests will come in"}
                 </p>
               </div>
