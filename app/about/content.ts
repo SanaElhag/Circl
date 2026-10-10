@@ -7,7 +7,7 @@ export const HERO = {
   eyebrow: "Our story",
   heading: "We built what we needed.",
   subheading:
-    "We're Alaa and Sana — once dormmates, now friends, hikers, and founders. We met at UFV, bonded over a shared culture and a love for the outdoors, and realized the community we were looking for didn't quite exist — so we built it ourselves.",
+    "We're Alaa and Sana, once dormmates, now friends, hikers, and founders. We met at UFV, bonded over a shared culture and a love for the outdoors, and realized the community we were looking for didn't quite exist, so we built it ourselves.",
 };
 
 // ── Problem section ───────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ export const team = [
 // ── Impact section ────────────────────────────────────────────────────────────
 export const IMPACT_SECTION = {
   eyebrow: "Why it matters",
-  heading: "Every rental is two wins.",
+  heading: "Every rental is three wins.",
 };
 
 export const impactCards = [
@@ -135,7 +135,7 @@ export const CTA = {
   eyebrow: "Join the community",
   heading: "Ready to use Circl?",
   subheading:
-    "Whether you've got gear to share or adventures to plan — there's a place for you here.",
+    "Whether you've got gear to share or adventures to plan, there's a place for you here.",
   primaryButton: "Create free account",
   secondaryButton: "Browse gear first",
 };

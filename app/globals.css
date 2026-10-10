@@ -217,18 +217,6 @@ body::after {
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
 
-/* ── Tailwind overrides for our design system ── */
-/* Square corners everywhere — override Tailwind's rounded-* */
-.rounded-xl,
-.rounded-2xl,
-.rounded-lg,
-.rounded-full {
-  border-radius: 0 !important;
-}
-
-/* Re-allow pill shapes only where explicitly needed */
-.pill { border-radius: 999px !important; }
-
 /* Status badge base */
 .status-badge {
   font-family: var(--font-mono);
@@ -248,7 +236,6 @@ input[type="date"],
 input[type="url"],
 textarea,
 select {
-  border-radius: 0 !important;
   font-family: var(--font-sans);
 }
 
@@ -258,4 +245,14 @@ textarea:focus,
 select:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(20, 61, 96, 0.2);
+}
+
+/* iOS Safari zooms the whole page in when you focus an input/textarea/select
+   with a computed font-size under 16px - every form on the site uses
+   text-sm (14px), so this forces 16px just for the tap target on small
+   screens instead of resizing every input's Tailwind class by hand */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }

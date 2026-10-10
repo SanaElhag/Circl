@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,12 +88,13 @@ function NewsEditorContent() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (imageFile) URL.revokeObjectURL(imageFile.preview);
-    setImageFile({ file, preview: URL.createObjectURL(file) });
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    const normalized = await normalizeImageFile(file);
+    if (imageFile) URL.revokeObjectURL(imageFile.preview);
+    setImageFile({ file: normalized, preview: URL.createObjectURL(normalized) });
   }
 
   async function handleSave(publish?: boolean) {
@@ -214,7 +216,7 @@ function NewsEditorContent() {
                 <Image src={imagePreview} alt="Preview" fill className="object-cover" />
                 <button
                   onClick={() => { setImageFile(null); setExistingImageUrl(null); }}
-                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl transition-opacity duration-200 shadow"
                 >
                   Remove
                 </button>
@@ -230,10 +232,10 @@ function NewsEditorContent() {
                   </svg>
                 </div>
                 <p className="text-sm text-gray-400 group-hover:text-[#143D60]">Upload photo</p>
-                <p className="text-xs text-gray-300">Optional — post can be text only</p>
+                <p className="text-xs text-gray-300">Optional, post can be text only</p>
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif" onChange={handleFileChange} className="hidden" />
           </section>
 
           {/* Caption + tag */}
@@ -279,7 +281,7 @@ function NewsEditorContent() {
           <section className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
             <div>
               <h2 className="text-xs font-semibold tracking-[0.25em] uppercase text-[#27667B]">Link</h2>
-              <p className="text-xs text-gray-400 mt-1">Optional — adds a button to the post.</p>
+              <p className="text-xs text-gray-400 mt-1">Optional, adds a button to the post.</p>
             </div>
 
             <div>

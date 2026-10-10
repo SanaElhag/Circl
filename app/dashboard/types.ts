@@ -18,9 +18,16 @@ export interface RawListingBasic {
   users: ListingUser[];          // always array from Supabase join
 }
 
+// full lifecycle a request actually goes through: pending -> accepted ->
+// active -> completed -> closed, or pending/accepted -> declined/cancelled
+// (see RequestStatus in requests/[id]/RequestView.tsx)
+export type RequestLifecycleStatus =
+  | "pending" | "accepted" | "declined"
+  | "active" | "completed" | "closed" | "cancelled";
+
 export interface RawBorrowerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined" | "cancelled";
+  status: RequestLifecycleStatus;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -29,7 +36,7 @@ export interface RawBorrowerRequest {
 
 export interface RawOwnerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined";
+  status: RequestLifecycleStatus;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -56,7 +63,7 @@ export interface ListingBasic {
 
 export interface BorrowerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined" | "cancelled";
+  status: RequestLifecycleStatus;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -65,7 +72,7 @@ export interface BorrowerRequest {
 
 export interface OwnerRequest {
   id: string;
-  status: "pending" | "accepted" | "declined";
+  status: RequestLifecycleStatus;
   start_date: string | null;
   end_date: string | null;
   created_at: string;

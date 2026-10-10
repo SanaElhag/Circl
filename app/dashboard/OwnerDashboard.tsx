@@ -3,13 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import type { OwnerListing, OwnerRequest, OwnerRating, ListingUser } from "./types";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const CATEGORY_LABELS: Record<string, string> = {
   skiing: "Skiing", snowboarding: "Snowboarding", hiking: "Hiking",
@@ -88,15 +83,23 @@ function RequestCard({ request, onStatusChange }: {
   const earning   = days && listing?.price_per_day ? days * listing.price_per_day : null;
 
   const STATUS_BADGE: Record<string, string> = {
-    pending:  "bg-yellow-50 text-yellow-700 border-yellow-200",
-    accepted: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",
-    declined: "bg-red-50 text-red-600 border-red-200",
+    pending:   "bg-yellow-50 text-yellow-700 border-yellow-200",
+    accepted:  "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",
+    active:    "bg-blue-50 text-blue-700 border-blue-200",
+    completed: "bg-[#F0F7F4] text-[#27667B] border-[#A0C878]",
+    closed:    "bg-gray-50 text-gray-500 border-gray-200",
+    declined:  "bg-red-50 text-red-600 border-red-200",
+    cancelled: "bg-gray-50 text-gray-500 border-gray-200",
   };
 
   const STATUS_ACCENT: Record<string, string> = {
-    pending:  "border-l-4 border-l-yellow-300",
-    accepted: "border-l-4 border-l-[#A0C878]",
-    declined: "border-l-4 border-l-red-300",
+    pending:   "border-l-4 border-l-yellow-300",
+    accepted:  "border-l-4 border-l-[#A0C878]",
+    active:    "border-l-4 border-l-blue-300",
+    completed: "border-l-4 border-l-[#A0C878]",
+    closed:    "border-l-4 border-l-gray-200",
+    declined:  "border-l-4 border-l-red-300",
+    cancelled: "border-l-4 border-l-gray-200",
   };
 
   async function updateStatus(status: "accepted" | "declined") {
@@ -231,9 +234,38 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
   const [tab,         setTab]         = useState<OwnerTab>("summary");
   const [requestList, setRequestList] = useState<OwnerRequest[]>(requests);
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
-  // stripe connect isn't live yet, see the coming soon banner below
+  const [connecting,  setConnecting]  = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
-  const accepted        = requestList.filter((r) => r.status === "accepted");
+  async function handleConnectStripe() {
+    setConnecting(true);
+    setConnectError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setConnecting(false); return; }
+
+    const res = await fetch("/api/stripe/connect", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setConnectError(body.error ?? "Couldn't start Stripe setup. Please try again.");
+      setConnecting(false);
+      return;
+    }
+
+    const { url } = await res.json();
+    window.location.href = url;
+  }
+
+  // once a request is accepted the owner has earned that money, whether the
+  // rental has since gone active/completed/closed or is still just accepted -
+  // filtering on "accepted" alone meant earnings actually dropped as soon as
+  // a rental progressed past that point, which is backwards
+  const EARNING_STATUSES = new Set(["accepted", "active", "completed", "closed"]);
+  const accepted         = requestList.filter((r) => EARNING_STATUSES.has(r.status));
   const pendingCount    = requestList.filter((r) => r.status === "pending").length;
   const activeListings  = listingList.filter((l) => l.available).length;
   const potentialPerDay = listingList.filter((l) => l.available).reduce((s, l) => s + l.price_per_day, 0);
@@ -268,7 +300,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
       .from("requests")
       .select("id", { count: "exact", head: true })
       .eq("listing_id", id)
-      .in("status", ["pending", "accepted"]);
+      .in("status", ["pending", "accepted", "active"]);
 
     if (count && count > 0) {
       alert("This listing has a pending or accepted request on it, so it can't be removed yet. Decline or complete it first.");
@@ -290,7 +322,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
       return;
     }
     if (!deletedRows || deletedRows.length === 0) {
-      alert("Couldn't remove this listing — you may not have permission to delete it.");
+      alert("Couldn't remove this listing. You may not have permission to delete it.");
       return;
     }
 
@@ -369,7 +401,8 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
 
           {[...requestList]
             .sort((a, b) => {
-              const ORDER: Record<string, number> = { active: 0, accepted: 1, pending: 2, completed: 3, closed: 4, cancelled: 5, declined: 6 };
+              // pending goes first - that's the one actually waiting on you
+              const ORDER: Record<string, number> = { pending: 0, active: 1, accepted: 2, completed: 3, closed: 4, cancelled: 5, declined: 6 };
               const sd = (ORDER[a.status] ?? 7) - (ORDER[b.status] ?? 7);
               if (sd !== 0) return sd;
               const aDate = a.start_date ?? a.created_at ?? "";
@@ -474,20 +507,26 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
           {stripeChargesEnabled ? (
             <div className="rounded-2xl bg-[#F0F7F4] border border-[#A0C878] p-5 flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-[#27667B] shrink-0" />
-              <p className="text-sm font-semibold text-[#27667B]">Payouts are active — accepted rentals pay out automatically.</p>
+              <p className="text-sm font-semibold text-[#27667B]">Payouts are active. Accepted rentals pay out automatically.</p>
             </div>
           ) : (
-            // no "set up payouts" button here since stripe isn't configured yet
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-amber-800">Automatic payouts are coming soon</p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  Until then, agree on payment with your renter directly when you accept a request.
-                </p>
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-amber-800">Set up payouts to get paid automatically</p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Until then, agree on payment with your renter directly when you accept a request.
+                  </p>
+                </div>
+                <button
+                  onClick={handleConnectStripe}
+                  disabled={connecting}
+                  className="shrink-0 bg-[#143D60] text-white font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-[#27667B] transition-colors duration-200 disabled:opacity-60"
+                >
+                  {connecting ? "Redirecting…" : "Set up payouts"}
+                </button>
               </div>
-              <div className="shrink-0 bg-gray-100 text-gray-400 font-bold px-4 py-2.5 rounded-xl text-sm cursor-not-allowed">
-                Coming soon
-              </div>
+              {connectError && <p className="text-xs text-red-600 mt-3">{connectError}</p>}
             </div>
           )}
 

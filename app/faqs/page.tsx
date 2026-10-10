@@ -65,7 +65,7 @@ const CATEGORY_ORDER = ["general", "renters", "owners", "payments", "safety", "a
 
 const FAQS: Faq[] = [
   // General
-  { id: "g1", category: "general", question: "What is Circl?", answer: "Circl is a peer-to-peer outdoor gear rental marketplace. It connects people who own gear they're not using with people who want to try or borrow gear for their next adventure — without the cost of buying new." },
+  { id: "g1", category: "general", question: "What is Circl?", answer: "Circl is a peer-to-peer outdoor gear rental marketplace. It connects people who own gear they're not using with people who want to try or borrow gear for their next adventure, without the cost of buying new." },
   { id: "g2", category: "general", question: "Is Circl available across Canada?", answer: "Yes! Circl is available to users across Canada. You can browse and list gear from anywhere in the country." },
   { id: "g3", category: "general", question: "Do I need an account to use the platform?", answer: "You need an account to rent or list gear. Browsing listings is open to everyone, but submitting a rental request or posting gear requires a free account." },
   { id: "g4", category: "general", question: "Is it free to sign up?", answer: "Yes, creating an account is completely free. We charge small service fees on transactions, which are disclosed at the time of booking." },
@@ -80,13 +80,13 @@ const FAQS: Faq[] = [
   // Owners
   { id: "o1", category: "owners", question: "How do I list my gear?", answer: "Go to your dashboard and click \"Post Gear.\" Fill in the title, category, condition, description, price per day, and photos. Once submitted, your listing will be live and visible to renters immediately." },
   { id: "o2", category: "owners", question: "How do I set my price?", answer: "You set your own price per day. A good rule of thumb is to charge 5–10% of the gear's retail value per day. Check similar listings on the platform to stay competitive." },
-  { id: "o3", category: "owners", question: "Can I pause or remove my listing?", answer: "Yes. You can toggle your listing's availability on and off at any time from your dashboard. You can also permanently remove a listing — note this cannot be undone." },
+  { id: "o3", category: "owners", question: "Can I pause or remove my listing?", answer: "Yes. You can toggle your listing's availability on and off at any time from your dashboard. You can also permanently remove a listing, but note this cannot be undone." },
   { id: "o4", category: "owners", question: "What happens if a renter damages my gear?", answer: "Renters are responsible for returning gear in the same condition they received it. If damage occurs, document it with photos and contact us right away. We will help facilitate a resolution between you and the renter." },
   { id: "o5", category: "owners", question: "Do I have to accept every request?", answer: "No. You review every rental request and can accept or decline at your discretion. You can also include a message to the renter when responding." },
 
   // Payments
   { id: "p1", category: "payments", question: "How do I get paid as an owner?", answer: "Payments are processed securely through our payment provider. Once a rental is completed, earnings are released to you according to our payout schedule. You'll need to set up your payout details in your account settings." },
-  { id: "p2", category: "payments", question: "What fees does Circl charge?", answer: "We charge a small service fee on each transaction. The exact fee is shown at checkout before you confirm a booking. We believe in transparent pricing — no surprises." },
+  { id: "p2", category: "payments", question: "What fees does Circl charge?", answer: "We charge a small service fee on each transaction. The exact fee is shown at checkout before you confirm a booking. We believe in transparent pricing, no surprises." },
   { id: "p3", category: "payments", question: "What currencies are supported?", answer: "All transactions are processed in Canadian dollars (CAD)." },
   { id: "p4", category: "payments", question: "Are payments secure?", answer: "Yes. All payments are processed through our certified third-party payment provider using industry-standard encryption. We never store your full card details on our servers." },
   { id: "p5", category: "payments", question: "What is the refund policy?", answer: "Refunds depend on the circumstances of the cancellation or issue. Renters who cancel in advance may be eligible for a full or partial refund per our Cancellation Policy. If there is a dispute about gear condition, contact our support team." },

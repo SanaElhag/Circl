@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import { passwordMeetsPolicy, firstUnmetRule } from "@/lib/password";
 import PasswordStrength from "@/app/components/PasswordStrength";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -142,21 +143,33 @@ export default function AccountSettingsPage() {
     const { error } = await supabase.auth.updateUser({
       data: { full_name: fullName.trim() },
     });
-    // Sync to users table too
+
+    // Sync to the users table too - this is what listing/profile pages
+    // actually read, the auth update above only affects your own session.
+    // .select() so a silently-blocked write doesn't look like it worked
+    let tableSyncFailed = false;
     if (!error && user) {
-      await supabase.from("users").update({ full_name: fullName.trim() }).eq("id", user.id);
+      const { data: savedRows, error: tableErr } = await supabase
+        .from("users")
+        .update({ full_name: fullName.trim() })
+        .eq("id", user.id)
+        .select("id");
+      tableSyncFailed = !!tableErr || !savedRows || savedRows.length === 0;
     }
+
     setSavingName(false);
     if (error) showToast(error.message, "error");
+    else if (tableSyncFailed) showToast("Name saved, but couldn't update your public profile. Please try again.", "error");
     else showToast("Name updated successfully.");
   }
 
-  function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    const normalized = await normalizeImageFile(file);
+    setAvatarFile(normalized);
+    setAvatarPreview(URL.createObjectURL(normalized));
   }
 
   async function handleSaveAvatar() {
@@ -324,7 +337,7 @@ export default function AccountSettingsPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
                     onChange={handleAvatarPick}
                     className="hidden"
                   />
@@ -546,10 +559,10 @@ export default function AccountSettingsPage() {
                 <div className="rounded-xl bg-red-50 border border-red-100 p-4 space-y-1.5">
                   <p className="text-sm font-semibold text-red-600">Before you delete</p>
                   <ul className="text-xs text-red-500 space-y-1">
-                    <li>— All your listings will be permanently removed.</li>
-                    <li>— Any active rental requests will be cancelled.</li>
-                    <li>— Your reviews and community posts will be deleted.</li>
-                    <li>— This cannot be undone.</li>
+                    <li>• All your listings will be permanently removed.</li>
+                    <li>• Any active rental requests will be cancelled.</li>
+                    <li>• Your reviews and community posts will be deleted.</li>
+                    <li>• This cannot be undone.</li>
                   </ul>
                 </div>
 

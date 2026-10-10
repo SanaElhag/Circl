@@ -26,7 +26,7 @@ export default function ListYourGearPage() {
           </h1>
           <p className="mt-3 text-gray-500 leading-relaxed max-w-xl">
             Your skis sit in storage eight months a year. Your tent hasn&apos;t seen a campsite since last summer.
-            List it on Circl and let someone else enjoy it — while you earn.
+            List it on Circl and let someone else enjoy it while you earn.
           </p>
         </div>
 
@@ -67,24 +67,24 @@ export default function ListYourGearPage() {
             </a>
           </div>
 
-          {/* ── SECTION 2: Stripe payouts — not live yet ── */}
+          {/* ── SECTION 2: Stripe payouts ── */}
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Coming soon</span>
+                <span className="w-2 h-2 rounded-full bg-[#A0C878]" />
+                <span className="text-xs font-semibold text-[#27667B] uppercase tracking-wider">Live now</span>
               </div>
               <h2 className="text-xl font-bold text-[#143D60]">Stripe-powered payouts</h2>
               <p className="text-sm text-gray-500 mt-1 leading-relaxed max-w-md">
-                We&apos;re finishing automatic payouts through Stripe, so renters can pay upfront and funds land
-                in your account as soon as you accept a request. Until then, you and the renter settle up directly.
+                Connect a Stripe account so renters can pay upfront and funds land in your account
+                as soon as you accept a request. Takes a couple minutes.
               </p>
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
               {[
-                { title: "Automatic payouts",     body: "Earnings will land in your account as soon as you accept a request." },
-                { title: "Small platform fee",     body: "We'll take a small cut to keep Circl running. Exact rate announced before launch." },
+                { title: "Automatic payouts",     body: "Earnings land in your account as soon as you accept a request." },
+                { title: "Small platform fee",     body: "We take a small cut to keep Circl running, shown at checkout, never a surprise." },
                 { title: "Full earnings history",  body: "Track every rental and payout from your dashboard." },
               ].map((item) => (
                 <div key={item.title} className="bg-[#F9FAFB] rounded-xl p-4">

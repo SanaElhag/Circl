@@ -36,7 +36,7 @@ function FailedContent() {
             <p className="text-xs font-semibold tracking-[0.25em] uppercase text-red-400 mb-2">Request Failed</p>
             <h1 className="text-3xl font-bold text-[#143D60] tracking-tight mb-3">Something went wrong</h1>
             <p className="text-gray-500 leading-relaxed">
-              We weren&apos;t able to send your rental request. Your rental details have been saved — just try again below.
+              We weren&apos;t able to send your rental request. Your rental details have been saved, just try again below.
             </p>
           </div>
 
@@ -48,9 +48,9 @@ function FailedContent() {
               <p className="text-sm text-red-700">{reason}</p>
             ) : (
               <ul className="text-sm text-red-700 space-y-1">
-                <li>— A temporary network issue interrupted the request.</li>
-                <li>— The listing may have become unavailable.</li>
-                <li>— Your session may have expired.</li>
+                <li>• A temporary network issue interrupted the request.</li>
+                <li>• The listing may have become unavailable.</li>
+                <li>• Your session may have expired.</li>
               </ul>
             )}
           </div>

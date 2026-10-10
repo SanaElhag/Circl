@@ -297,7 +297,7 @@ function CheckoutContent() {
             <ol className="space-y-3">
               {[
                 { step: "1", text: "Your request is sent to the owner for review." },
-                { step: "2", text: "You'll receive a notification once they accept or decline — usually within 24 hours." },
+                { step: "2", text: "You'll receive a notification once they accept or decline, usually within 24 hours." },
                 { step: "3", text: "Once accepted, coordinate pick-up directly with the owner." },
                 { step: "4", text: "Enjoy the gear, then return it by the agreed date." },
               ].map(({ step, text }) => (
@@ -358,7 +358,7 @@ function CheckoutContent() {
                 ? "All amounts in CAD. Your card is authorized now and only charged if the owner accepts."
                 : paymentState === "rate_limited"
                 ? "Give it a few seconds and try again."
-                : "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept — this isn't collected through Circl."}
+                : "Online payment isn't set up for this listing yet. You'll arrange payment with the owner directly once they accept. This isn't collected through Circl."}
             </p>
 
             {error && (

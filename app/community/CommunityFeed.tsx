@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,12 +21,14 @@ interface RawComment {
   users: PostUser | PostUser[];
 }
 
+interface RawPostLike { user_id: string; users: PostUser | PostUser[] }
+
 interface RawPost {
   id: string; content: string | null; media_urls: string[];
   link_url: string | null; link_title: string | null;
   is_public: boolean; created_at: string;
   users: PostUser | PostUser[];
-  post_likes: { user_id: string }[];
+  post_likes: RawPostLike[];
   post_comments: RawComment[];
 }
 
@@ -37,7 +40,7 @@ interface Post {
   id: string; content: string | null; media_urls: string[];
   link_url: string | null; link_title: string | null;
   is_public: boolean; created_at: string; users: PostUser;
-  post_likes: { user_id: string }[]; post_comments: Comment[];
+  post_likes: { user_id: string; users: PostUser }[]; post_comments: Comment[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,6 +53,9 @@ function normalisePost(raw: RawPost): Post {
     ...raw,
     media_urls: raw.media_urls ?? [],
     users: unwrapUser(raw.users),
+    post_likes: (raw.post_likes ?? []).map((l) => ({
+      user_id: l.user_id, users: unwrapUser(l.users),
+    })),
     post_comments: (raw.post_comments ?? []).map((c) => ({
       ...c, users: unwrapUser(c.users),
     })),
@@ -87,7 +93,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
 
 // ─── Dot-menu (delete) ────────────────────────────────────────────────────────
 
-function DotMenu({ onDelete }: { onDelete: () => void }) {
+function DotMenu({ onDelete, onEdit }: { onDelete: () => void; onEdit?: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -103,14 +109,22 @@ function DotMenu({ onDelete }: { onDelete: () => void }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-7 h-7 flex items-center justify-center rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200"
+        className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-200"
       >
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 20 20">
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       </button>
       {open && (
-        <div className="absolute right-0 top-8 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden min-w-[120px]">
+        <div className="absolute right-0 top-10 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden min-w-[120px]">
+          {onEdit && (
+            <button
+              onClick={() => { setOpen(false); onEdit(); }}
+              className="w-full text-left px-4 py-2.5 text-sm text-[#143D60] hover:bg-gray-50 transition-colors duration-200 font-medium"
+            >
+              Edit
+            </button>
+          )}
           <button
             onClick={() => { setOpen(false); onDelete(); }}
             className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-200 font-medium"
@@ -142,14 +156,17 @@ function ComposeBox({ user, onPost }: { user: User; onPost: (post: Post) => void
     return () => mediaFiles.forEach((m) => URL.revokeObjectURL(m.preview));
   }, [mediaFiles]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     const remaining = MAX_MEDIA - mediaFiles.length;
-    const toAdd = files.slice(0, remaining).map((file) => ({
+    // no-op for anything that isn't heic, so videos pass straight through
+    const normalized = await Promise.all(files.slice(0, remaining).map(normalizeImageFile));
+    const toAdd = normalized.map((file) => ({
       file, preview: URL.createObjectURL(file),
     }));
     setMediaFiles((prev) => [...prev, ...toAdd]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removeMedia(i: number) {
@@ -202,7 +219,7 @@ function ComposeBox({ user, onPost }: { user: User; onPost: (post: Post) => void
         .select(`
           id, content, media_urls, link_url, link_title, is_public, created_at,
           users!posts_user_id_fkey ( id, full_name ),
-          post_likes ( user_id ),
+          post_likes ( user_id, users!post_likes_user_id_fkey ( id, full_name ) ),
           post_comments ( id, content, created_at, users!post_comments_user_id_fkey ( id, full_name ) )
         `)
         .single();
@@ -235,7 +252,7 @@ function ComposeBox({ user, onPost }: { user: User; onPost: (post: Post) => void
               {isVideo(m.file.name)
                 ? <video src={m.preview} className="w-full h-full object-cover" />
                 : <Image src={m.preview} alt={`media ${i}`} fill className="object-cover" />}
-              <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow">&times;</button>
+              <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center transition-opacity duration-200 shadow">&times;</button>
             </div>
           ))}
           {mediaFiles.length < MAX_MEDIA && (
@@ -278,35 +295,78 @@ function ComposeBox({ user, onPost }: { user: User; onPost: (post: Post) => void
         </button>
       </div>
 
-      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" multiple onChange={handleFileChange} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif,video/mp4,video/quicktime,video/webm" multiple onChange={handleFileChange} className="hidden" />
     </div>
   );
 }
 
 // ─── Post card ────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUserId, onDelete }: {
+function PostCard({ post, currentUserId, onDelete, onEdit }: {
   post: Post;
   currentUserId: string | null;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => void;
 }) {
-  const [liked, setLiked] = useState(currentUserId ? post.post_likes.some((l) => l.user_id === currentUserId) : false);
-  const [likeCount, setLikeCount] = useState(post.post_likes.length);
+  const [likes,         setLikes]         = useState(post.post_likes);
+  const [showLikers,    setShowLikers]    = useState(false);
   const [comments, setComments] = useState<Comment[]>(post.post_comments);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [postingComment, setPostingComment] = useState(false);
+  const [mediaIndex,    setMediaIndex]    = useState(0);
+  const [isEditing,     setIsEditing]     = useState(false);
+  const [editContent,   setEditContent]   = useState(post.content ?? "");
+  const [savingEdit,    setSavingEdit]    = useState(false);
   const isOwner = currentUserId === post.users.id;
+  const liked = currentUserId ? likes.some((l) => l.user_id === currentUserId) : false;
 
-  async function toggleLike() {
-    if (!currentUserId) return;
-    if (liked) {
-      setLiked(false); setLikeCount((n) => n - 1);
-      await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
-    } else {
-      setLiked(true); setLikeCount((n) => n + 1);
-      await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId });
+  // swipe-between-photos in the inline carousel, instagram-style
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function handleSwipeStart(e: React.TouchEvent) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleSwipeEnd(e: React.TouchEvent, count: number) {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+
+    // ignore taps and mostly-vertical drags
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0) setMediaIndex((i) => Math.min(i + 1, count - 1));
+    else setMediaIndex((i) => Math.max(i - 1, 0));
+  }
+
+  // likes are one-way here - once you've liked a post there's no unliking it,
+  // so this is just "like", not "toggleLike"
+  async function handleLike() {
+    if (!currentUserId || liked) return;
+    const optimistic = { user_id: currentUserId, users: { id: currentUserId, full_name: "You" } };
+    setLikes((prev) => [...prev, optimistic]);
+    const { error } = await supabase.from("post_likes").insert({ post_id: post.id, user_id: currentUserId });
+    if (error) setLikes((prev) => prev.filter((l) => l.user_id !== currentUserId));
+  }
+
+  async function handleSaveEdit() {
+    const trimmed = editContent.trim();
+    setSavingEdit(true);
+    const { data: updatedRows, error } = await supabase
+      .from("posts")
+      .update({ content: trimmed || null })
+      .eq("id", post.id)
+      .select("id");
+    setSavingEdit(false);
+
+    if (error || !updatedRows || updatedRows.length === 0) {
+      alert("Couldn't save your changes. Please try again.");
+      return;
     }
+    onEdit(post.id, trimmed);
+    setIsEditing(false);
   }
 
   async function handleDeletePost() {
@@ -371,23 +431,95 @@ function PostCard({ post, currentUserId, onDelete }: {
         {!post.is_public && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Members only</span>
         )}
-        {isOwner && <DotMenu onDelete={handleDeletePost} />}
+        {isOwner && <DotMenu onDelete={handleDeletePost} onEdit={() => { setEditContent(post.content ?? ""); setIsEditing(true); }} />}
       </div>
 
-      {post.content && (
-        <p className="px-5 pb-3 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
+      {mediaCount > 0 && (
+        <div className="relative w-full aspect-square bg-gray-100 overflow-hidden group">
+          <div
+            className="flex h-full transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(-${mediaIndex * 100}%)` }}
+            onTouchStart={handleSwipeStart}
+            onTouchEnd={(e) => handleSwipeEnd(e, mediaCount)}
+          >
+            {post.media_urls.map((u, i) => (
+              <div key={i} className="relative w-full h-full shrink-0 bg-black">
+                {isVideo(u)
+                  ? <video src={u} controls playsInline preload="metadata" className="w-full h-full object-contain" />
+                  : <Image src={u} alt={`media ${i + 1}`} fill className="object-cover" sizes="(max-width: 640px) 100vw, 600px" />}
+              </div>
+            ))}
+          </div>
+
+          {mediaCount > 1 && mediaIndex > 0 && (
+            <button
+              onClick={() => setMediaIndex((i) => i - 1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-[#143D60] shadow transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          {mediaCount > 1 && mediaIndex < mediaCount - 1 && (
+            <button
+              onClick={() => setMediaIndex((i) => i + 1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-[#143D60] shadow transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {mediaCount > 1 && (
+            <div className="absolute top-3 right-3 bg-black/50 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+              {mediaIndex + 1}/{mediaCount}
+            </div>
+          )}
+
+          {mediaCount > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {post.media_urls.map((_, i) => (
+                <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${i === mediaIndex ? "bg-white" : "bg-white/40"}`} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {mediaCount > 0 && (
-        <div className={`grid gap-0.5 ${mediaCount === 1 ? "grid-cols-1" : mediaCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-          {post.media_urls.map((u, i) => (
-            <div key={i} className={`relative bg-gray-100 ${mediaCount === 1 ? "aspect-video" : "aspect-square"}`}>
-              {isVideo(u)
-                ? <video src={u} controls className="w-full h-full object-cover" preload="metadata" />
-                : <Image src={u} alt={`media ${i + 1}`} fill className="object-cover" />}
-            </div>
-          ))}
+      {isEditing ? (
+        <div className="px-5 pt-3 pb-2">
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            className="w-full bg-gray-50 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#143D60] transition-colors duration-200 resize-none"
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => { setIsEditing(false); setEditContent(post.content ?? ""); }}
+              className="flex-1 border border-gray-200 text-gray-500 font-semibold py-2 rounded-xl hover:bg-gray-50 transition-colors duration-200 text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+              className="flex-1 bg-[#143D60] text-white font-bold py-2 rounded-xl hover:bg-[#27667B] transition-colors duration-200 text-xs disabled:opacity-60"
+            >
+              {savingEdit ? "Saving…" : "Save"}
+            </button>
+          </div>
         </div>
+      ) : post.content && (
+        <p className="px-5 pt-3 pb-1 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+          <Link href={`/profile/${post.users.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200 mr-1.5">
+            {post.users.full_name}
+          </Link>
+          {post.content}
+        </p>
       )}
 
       {url && (
@@ -404,19 +536,59 @@ function PostCard({ post, currentUserId, onDelete }: {
       )}
 
       <div className="flex items-center gap-4 px-5 py-3 border-t border-gray-50">
-        <button onClick={toggleLike} disabled={!currentUserId}
-          className={`flex items-center gap-1.5 text-sm transition-colors duration-200 ${liked ? "text-red-500" : "text-gray-400 hover:text-red-400"} ${!currentUserId ? "cursor-default" : ""}`}>
+        <button
+          onClick={handleLike}
+          disabled={!currentUserId || liked}
+          title={liked ? "You liked this" : "Like"}
+          className={`flex items-center gap-1.5 text-sm transition-colors duration-200 ${
+            liked ? "text-red-500 cursor-default" : "text-gray-400 hover:text-red-400"
+          } ${!currentUserId ? "cursor-default" : ""}`}
+        >
           <svg className="w-4 h-4" fill={liked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
-          {likeCount > 0 && <span>{likeCount}</span>}
         </button>
+        {likes.length > 0 && (
+          <button onClick={() => setShowLikers(true)} className="text-sm text-gray-500 hover:text-[#143D60] font-semibold transition-colors duration-200 -ml-2.5">
+            {likes.length} {likes.length === 1 ? "like" : "likes"}
+          </button>
+        )}
         <button onClick={() => setShowComments((v) => !v)}
           className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#143D60] transition-colors duration-200">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
           {comments.length > 0 && <span>{comments.length}</span>}
         </button>
       </div>
+
+      {showLikers && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowLikers(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xs w-full max-h-[70vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <p className="font-bold text-[#143D60] text-sm">Liked by</p>
+              <button onClick={() => setShowLikers(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto py-2">
+              {likes.map((l) => (
+                <Link
+                  key={l.user_id}
+                  href={`/profile/${l.user_id}`}
+                  onClick={() => setShowLikers(false)}
+                  className="flex items-center gap-2.5 px-5 py-2 hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <Avatar name={l.users.full_name} size="sm" />
+                  <span className="text-sm text-[#143D60] font-semibold">
+                    {l.user_id === currentUserId ? "You" : l.users.full_name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showComments && (
         <div className="border-t border-gray-50 px-5 py-4 space-y-4">
@@ -564,6 +736,10 @@ export default function CommunityFeed({
     setPosts((prev) => prev.filter((p) => p.id !== id));
   }
 
+  function handleEdit(id: string, content: string) {
+    setPosts((prev) => prev.map((p) => p.id === id ? { ...p, content: content || null } : p));
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
 
@@ -589,6 +765,7 @@ export default function CommunityFeed({
                 post={post}
                 currentUserId={user?.id ?? null}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))}
           </div>

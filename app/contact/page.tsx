@@ -152,7 +152,7 @@ export default function ContactPage() {
             Contact us
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-md">
-            A question, a concern, or just want to say hi — we&apos;re a small team and we read every message.
+            A question, a concern, or just want to say hi, we&apos;re a small team and we read every message.
           </p>
         </div>
       </section>

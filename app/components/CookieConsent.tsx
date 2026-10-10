@@ -51,7 +51,7 @@ export default function CookieConsent() {
     >
       <div className="mx-auto max-w-3xl rounded-2xl bg-[#143D60] shadow-2xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <p className="text-sm text-white/70 leading-relaxed flex-1">
-          We use local storage to keep you signed in — that&apos;s it today, no tracking or ad
+          We use local storage to keep you signed in, that&apos;s it today, no tracking or ad
           cookies.{" "}
           <Link href="/cookies" className="text-[#DDEB9D] underline underline-offset-2 hover:text-white transition-colors duration-200">
             Read the details

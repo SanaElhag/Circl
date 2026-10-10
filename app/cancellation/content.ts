@@ -2,7 +2,7 @@ export const LAST_UPDATED = "April 6, 2026";
 export const CONTACT_EMAIL = "circl@gmail.com";
 
 export const PREAMBLE =
-  "The short version: Cancel before the owner responds — no charge. Cancel after acceptance with 48+ hours notice — rental amount refunded minus the platform fee. Cancel within 48 hours — 50% refund. Once the rental is active, no refund is available. Owners who cancel accepted bookings must give renters a full refund.";
+  "The short version: Cancel before the owner responds, no charge. Cancel after acceptance with 48+ hours notice, rental amount refunded minus the platform fee. Cancel within 48 hours, 50% refund. Once the rental is active, no refund is available. Owners who cancel accepted bookings must give renters a full refund.";
 
 export const REFUND_TABLE = [
   {
@@ -148,7 +148,7 @@ export const sections = [
     id: "modifications",
     title: "8. Rental Modifications",
     paragraphs: [
-      "Changes to rental dates or terms after a request has been accepted are treated as modifications, not cancellations — provided both parties agree.",
+      "Changes to rental dates or terms after a request has been accepted are treated as modifications, not cancellations, provided both parties agree.",
       `To modify a pending request, Renters can use the "Edit request" option on the request page. For accepted rentals, date changes require mutual agreement and should be coordinated through the in-app messaging thread. Circl is not responsible for informal agreements made outside the platform.`,
       "If a modification results in a lower rental price, the difference will be refunded (minus the platform fee). If the modification increases the price, the additional amount is due at pick-up.",
     ],

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -119,12 +120,13 @@ function BlogEditorContent() {
     });
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (coverFile) URL.revokeObjectURL(coverFile.preview);
-    setCoverFile({ file, preview: URL.createObjectURL(file) });
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    const normalized = await normalizeImageFile(file);
+    if (coverFile) URL.revokeObjectURL(coverFile.preview);
+    setCoverFile({ file: normalized, preview: URL.createObjectURL(normalized) });
   }
 
   async function handleSave(publish?: boolean) {
@@ -254,7 +256,7 @@ function BlogEditorContent() {
                 <Image src={coverPreview} alt="Cover" fill className="object-cover" />
                 <button
                   onClick={() => { setCoverFile(null); setExistingCoverUrl(null); }}
-                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                  className="absolute top-2 right-2 bg-white/90 text-[#143D60] text-xs font-bold px-3 py-1.5 rounded-xl transition-opacity duration-200 shadow"
                 >
                   Remove
                 </button>
@@ -272,7 +274,7 @@ function BlogEditorContent() {
                 <p className="text-sm text-gray-400 group-hover:text-[#143D60]">Upload cover image</p>
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif" onChange={handleFileChange} className="hidden" />
           </section>
 
           {/* Core fields */}
@@ -312,7 +314,7 @@ function BlogEditorContent() {
             {/* Excerpt */}
             <div>
               <label className="block text-sm font-semibold text-[#143D60] mb-1.5">
-                Excerpt <span className="text-gray-400 font-normal">(optional — shown in card previews)</span>
+                Excerpt <span className="text-gray-400 font-normal">(optional, shown in card previews)</span>
               </label>
               <textarea
                 value={form.excerpt}
@@ -410,7 +412,7 @@ function BlogEditorContent() {
               <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${form.published ? "translate-x-5" : "translate-x-0"}`} />
             </button>
             <span className={`text-sm font-semibold ${form.published ? "text-[#27667B]" : "text-gray-400"}`}>
-              {form.published ? "Published" : "Draft — not visible to readers"}
+              {form.published ? "Published" : "Draft, not visible to readers"}
             </span>
           </div>
 

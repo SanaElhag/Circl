@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { normalizeImageFile } from "@/lib/normalizeImageFile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -153,14 +154,16 @@ export default function EditGearPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     const remaining = MAX_PHOTOS - images.length;
-    const toAdd: LocalImage[] = files.slice(0, remaining).map((file) => ({
+    const normalized = await Promise.all(files.slice(0, remaining).map(normalizeImageFile));
+    const toAdd: LocalImage[] = normalized.map((file) => ({
       kind: "local", file, preview: URL.createObjectURL(file),
     }));
     setImages((prev) => [...prev, ...toAdd]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removeImage(index: number) {
@@ -259,10 +262,10 @@ export default function EditGearPage() {
         .from("requests")
         .select("id", { count: "exact", head: true })
         .eq("listing_id", id)
-        .in("status", ["pending", "accepted"]);
+        .in("status", ["pending", "accepted", "active"]);
 
       if (count && count > 0) {
-        throw new Error("This listing has a pending or accepted request on it, so it can't be removed yet. Decline or complete it first.");
+        throw new Error("This listing has a pending, accepted, or active request on it, so it can't be removed yet. Decline or complete it first.");
       }
 
       // Delete all listing_images rows (Storage files stay but listing is gone)
@@ -276,7 +279,7 @@ export default function EditGearPage() {
         .select("id");
       if (delErr) throw new Error(delErr.message);
       if (!deletedRows || deletedRows.length === 0) {
-        throw new Error("Couldn't remove this listing — you may not have permission to delete it.");
+        throw new Error("Couldn't remove this listing. You may not have permission to delete it.");
       }
       router.push("/my-gear");
     } catch (err: unknown) {
@@ -335,8 +338,8 @@ export default function EditGearPage() {
                 <p className="font-bold text-[#143D60]">Listing status</p>
                 <p className="text-sm text-gray-400 mt-0.5">
                   {form.available
-                    ? "Visible in browse — renters can request this gear"
-                    : "Hidden from browse — no new requests will come in"}
+                    ? "Visible in browse, renters can request this gear"
+                    : "Hidden from browse, no new requests will come in"}
                 </p>
               </div>
               {/* Toggle switch */}
@@ -381,7 +384,7 @@ export default function EditGearPage() {
                     )}
                     <button
                       onClick={() => removeImage(i)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 text-[#143D60] font-bold text-xs flex items-center justify-center transition-opacity duration-200 shadow"
                     >
                       &times;
                     </button>
@@ -411,7 +414,7 @@ export default function EditGearPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
               multiple
               onChange={handleFileChange}
               className="hidden"

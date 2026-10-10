@@ -25,7 +25,7 @@ export default function CookiePolicyPage() {
           <p className="text-sm text-[#143D60] leading-relaxed">
             <strong>The short version:</strong> Circl doesn&apos;t use tracking or advertising
             cookies today. This page explains exactly what we do store, and we&apos;ll update
-            it — and ask again — before that changes.
+            it, and ask again, before that changes.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default function CookiePolicyPage() {
           <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed space-y-3">
             <p>
               Signing in keeps you signed in using your browser&apos;s <strong>local storage</strong>,
-              not a tracking cookie — it holds your session token so you don&apos;t have to log in on
+              not a tracking cookie. It holds your session token so you don&apos;t have to log in on
               every page. It&apos;s essential to the site working and can&apos;t be turned off short of
               signing out.
             </p>
@@ -49,7 +49,7 @@ export default function CookiePolicyPage() {
               <li className="list-disc">No advertising or third-party tracking cookies.</li>
               <li className="list-disc">No analytics scripts yet (Google Analytics, Meta Pixel, etc.).</li>
               <li className="list-disc">Payments, when you use them, are handled by Stripe on Stripe&apos;s own
-                domain — see their <a href="https://stripe.com/cookies-policy/legal" target="_blank" rel="noopener noreferrer" className="text-[#27667B] underline underline-offset-2">cookie policy</a> for what they set during checkout.</li>
+                domain. See their <a href="https://stripe.com/cookies-policy/legal" target="_blank" rel="noopener noreferrer" className="text-[#27667B] underline underline-offset-2">cookie policy</a> for what they set during checkout.</li>
             </ul>
           </div>
         </div>
@@ -62,7 +62,7 @@ export default function CookiePolicyPage() {
             <p>
               If we ever add analytics or anything else that isn&apos;t strictly necessary for the
               site to function, we&apos;ll update this page first and ask for your consent again
-              before it loads — not bury it in a settings page you&apos;d never find.
+              before it loads, not bury it in a settings page you&apos;d never find.
             </p>
           </div>
         </div>
@@ -76,8 +76,8 @@ export default function CookiePolicyPage() {
               Reach us at{" "}
               <a href="mailto:circl@gmail.com" className="text-[#27667B] underline underline-offset-2">
                 circl@gmail.com
-              </a>{" "}
-              — or see our{" "}
+              </a>
+              , or see our{" "}
               <Link href="/privacy" className="text-[#27667B] underline underline-offset-2">Privacy Policy</Link>{" "}
               for how we handle the account information you give us directly.
             </p>

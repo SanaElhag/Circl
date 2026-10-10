@@ -31,7 +31,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Circl — Student Gear Rentals",
+  title: "Circl | Student Gear Rentals",
   description: "Rent and swap outdoor gear with other UFV students and staff.",
 };
 

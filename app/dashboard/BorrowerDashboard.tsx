@@ -32,9 +32,10 @@ const GROUP_META: Record<HistoryGroup, { label: string; dot: string; defaultOpen
 const GROUP_ORDER: HistoryGroup[] = ["pending", "accepted", "completed", "declined", "cancelled"];
 
 function groupForRequest(r: BorrowerRequest): HistoryGroup {
-  if (r.status === "accepted") {
+  if (r.status === "accepted" || r.status === "active") {
     return r.end_date && new Date(r.end_date) < new Date() ? "completed" : "accepted";
   }
+  if (r.status === "completed" || r.status === "closed") return "completed";
   return r.status;
 }
 
@@ -237,7 +238,7 @@ function HistoryCard({ r, canRate, rated, onRate }: {
           )}
         </div>
         {!canRate && rated && (
-          <p className="text-[11px] text-center text-gray-400 mt-2">Rated — thanks for your feedback</p>
+          <p className="text-[11px] text-center text-gray-400 mt-2">Rated, thanks for your feedback</p>
         )}
       </div>
     </div>
@@ -267,7 +268,12 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
     () => new Set(GROUP_ORDER.filter((g) => GROUP_META[g].defaultOpen))
   );
 
-  const accepted   = requests.filter((r) => r.status === "accepted");
+  // any request that was ever accepted counts toward spend/impact, whether
+  // the rental has since gone active/completed/closed or is still just
+  // accepted - filtering on "accepted" alone meant these stats dropped a
+  // rental as soon as it actually progressed, which is backwards
+  const EARNING_STATUSES = new Set(["accepted", "active", "completed", "closed"]);
+  const accepted   = requests.filter((r) => EARNING_STATUSES.has(r.status));
   const completed  = requests.filter((r) => groupForRequest(r) === "completed");
   const totalDays  = accepted.reduce((s, r) => s + (r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : 1), 0);
   const totalSpent = accepted.reduce((s, r) => s + ((r.listings?.price_per_day ?? 0) * (r.start_date && r.end_date ? diffDays(r.start_date, r.end_date) : 1)), 0);
@@ -346,7 +352,7 @@ export default function BorrowerDashboard({ requests, ratedRequestIds, userId }:
             <p className="text-sm text-white/70 leading-relaxed relative max-w-lg">
               {totalDays === 0
                 ? "Every rental is gear that didn't need to be manufactured new. Even one rental makes a difference."
-                : `Renting instead of buying for ${totalDays} day${totalDays !== 1 ? "s" : ""} kept roughly ${co2Saved.toFixed(1)} kg of CO₂ out of the atmosphere — that's like avoiding ${(co2Saved / 4.6).toFixed(1)} km of driving.`}
+                : `Renting instead of buying for ${totalDays} day${totalDays !== 1 ? "s" : ""} kept roughly ${co2Saved.toFixed(1)} kg of CO₂ out of the atmosphere. That's like avoiding ${(co2Saved / 4.6).toFixed(1)} km of driving.`}
             </p>
           </div>
 
