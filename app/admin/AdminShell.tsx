@@ -664,7 +664,7 @@ function PromoPanel() {
             onChange={(e) => setDraft({ ...draft, badge_text: e.target.value })}
           />
         </Field>
-        <Field label="Discount Value % (optional — leave blank for non-discount promos)">
+        <Field label="Discount Value % (optional, leave blank for non-discount promos)">
           <input
             className={inputCls}
             type="number"
@@ -876,7 +876,24 @@ function UsersPanel() {
 
   async function updateRole() {
     if (!roleChange) return;
-    await supabase.from("users").update({ role: newRole }).eq("id", roleChange.id);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const res = await fetch("/api/admin/users/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId: roleChange.id, role: newRole }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.error ?? "Couldn't update that user's role.");
+      return;
+    }
+
     setRoleChange(null);
     load();
   }
@@ -1064,7 +1081,7 @@ function ListingsPanel() {
       return;
     }
     if (!deletedRows || deletedRows.length === 0) {
-      alert("Couldn't remove this listing — the admin account may not have delete permission on it.");
+      alert("Couldn't remove this listing. The admin account may not have delete permission on it.");
       return;
     }
     load();
