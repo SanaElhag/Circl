@@ -120,7 +120,15 @@ export default function AccountSettingsPage() {
       const u = session.user;
       setUser(u);
       setFullName(u.user_metadata?.full_name ?? "");
-      setAvatarUrl(u.user_metadata?.avatar_url ?? null);
+
+      // Prefer the users table (what everyone else actually sees) and fall
+      // back to auth metadata for anyone who set a photo before that column existed
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("avatar_url")
+        .eq("id", u.id)
+        .single();
+      setAvatarUrl(userRow?.avatar_url ?? u.user_metadata?.avatar_url ?? null);
 
       // Load notification prefs from user metadata (stored there for simplicity)
       const prefs = u.user_metadata?.notification_prefs;
@@ -183,12 +191,27 @@ export default function AccountSettingsPage() {
     if (upErr) { showToast(upErr.message, "error"); setSavingAvatar(false); return; }
     const { data: { publicUrl } } = supabase.storage.from("gear-images").getPublicUrl(path);
     const { error } = await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+
+    // Sync to the users table too - this is what listing/profile pages
+    // actually read, the auth update above only affects your own session.
+    // .select() so a silently-blocked write doesn't look like it worked
+    let tableSyncFailed = false;
+    if (!error) {
+      const { data: savedRows, error: tableErr } = await supabase
+        .from("users")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id)
+        .select("id");
+      tableSyncFailed = !!tableErr || !savedRows || savedRows.length === 0;
+    }
+
     if (error) showToast(error.message, "error");
     else {
       setAvatarUrl(publicUrl);
       setAvatarPreview(null);
       setAvatarFile(null);
-      showToast("Profile photo updated.");
+      if (tableSyncFailed) showToast("Photo saved, but couldn't update your public profile. Please try again.", "error");
+      else showToast("Profile photo updated.");
     }
     setSavingAvatar(false);
   }

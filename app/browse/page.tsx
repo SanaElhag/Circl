@@ -24,6 +24,12 @@ const conditionColor: Record<string, string> = {
   "Worn":     "text-gray-400",
 };
 
+type ListingOwner = { id: string; full_name: string; avatar_url: string | null };
+
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
 type Listing = {
   id: string;
   title: string;
@@ -37,19 +43,12 @@ type Listing = {
   available_from: string | null;
   available_until: string | null;
   created_at: string;
+  users: ListingOwner | ListingOwner[] | null;
 };
 
-function isAvailableThisWeekend(listing: Listing): boolean {
-  if (!listing.available_from || !listing.available_until) return false;
-  const today = new Date();
-  const daysUntilSat = (6 - today.getDay() + 7) % 7 || 7;
-  const saturday = new Date(today);
-  saturday.setDate(today.getDate() + daysUntilSat);
-  const sunday = new Date(saturday);
-  sunday.setDate(saturday.getDate() + 1);
-  const from = new Date(listing.available_from);
-  const until = new Date(listing.available_until);
-  return from <= saturday && until >= sunday;
+function unwrapOwner(u: ListingOwner | ListingOwner[] | null | undefined): ListingOwner | null {
+  if (!u) return null;
+  return Array.isArray(u) ? (u[0] ?? null) : u;
 }
 
 function isAvailableForDates(listing: Listing, range: DateRange): boolean {
@@ -81,6 +80,7 @@ function BrowseContent() {
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [ownerRatings, setOwnerRatings] = useState<Record<string, { avg: number; count: number }>>({});
 
   // Filters
   const [maxPrice, setMaxPrice] = useState(200);
@@ -125,6 +125,36 @@ function BrowseContent() {
   }, []);
 
 
+// Fetches each owner's average rating as a gear owner, and merges it into
+// state keyed by owner id so cards can show "4.8 (12)" next to their name
+async function loadOwnerRatings(ownerIds: string[]) {
+  const unique = [...new Set(ownerIds)];
+  if (unique.length === 0) return;
+
+  const { data } = await supabase
+    .from("ratings")
+    .select("ratee_id, owner_rating")
+    .in("ratee_id", unique)
+    .not("owner_rating", "is", null);
+
+  const sums = new Map<string, { total: number; count: number }>();
+  for (const r of data ?? []) {
+    const entry = sums.get(r.ratee_id) ?? { total: 0, count: 0 };
+    entry.total += r.owner_rating;
+    entry.count += 1;
+    sums.set(r.ratee_id, entry);
+  }
+
+  setOwnerRatings((prev) => {
+    const next = { ...prev };
+    for (const id of unique) {
+      const entry = sums.get(id);
+      next[id] = entry ? { avg: entry.total / entry.count, count: entry.count } : { avg: 0, count: 0 };
+    }
+    return next;
+  });
+}
+
 // Waits 300ms after user stops typing before hitting Supabase
 useEffect(() => {
   const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -143,7 +173,7 @@ useEffect(() => {
       // Build the query for page 0
       let query = supabase
         .from("listings")
-        .select("*")
+        .select("*, users!listings_user_id_fkey ( id, full_name, avatar_url )")
         .order("created_at", { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
@@ -172,6 +202,7 @@ useEffect(() => {
         const results = data ?? [];
         setHasMore(results.length === PAGE_SIZE);
         setListings(results);
+        loadOwnerRatings(results.map((r) => unwrapOwner(r.users)?.id).filter((id): id is string => !!id));
       }
     }
 
@@ -190,7 +221,7 @@ useEffect(() => {
 
     let query = supabase
       .from("listings")
-      .select("*")
+      .select("*, users!listings_user_id_fkey ( id, full_name, avatar_url )")
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -217,6 +248,7 @@ useEffect(() => {
       pageRef.current = nextPage;
       setHasMore(results.length === PAGE_SIZE);
       setListings((prev) => [...(prev ?? []), ...results]);
+      loadOwnerRatings(results.map((r) => unwrapOwner(r.users)?.id).filter((id): id is string => !!id));
     }
 
     setLoadingMore(false);
@@ -551,14 +583,15 @@ useEffect(() => {
               <>
                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                   {visibleListings.map((item) => {
-                    const availWeekend = isAvailableThisWeekend(item);
                     const availForDates = dateRange ? isAvailableForDates(item, dateRange) : true;
+                    const owner = unwrapOwner(item.users);
+                    const ownerRating = owner ? ownerRatings[owner.id] : null;
 
                     return (
-                      <Link key={item.id} href={`/gear/${item.id}`}
+                      <div key={item.id}
                         className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
 
-                        <div className="relative aspect-[4/3] overflow-hidden">
+                        <Link href={`/gear/${item.id}`} className="relative aspect-[4/3] overflow-hidden block">
                           <Image
                             src={item.image_url ?? PLACEHOLDER_IMAGE}
                             alt={item.title}
@@ -569,12 +602,6 @@ useEffect(() => {
                             {item.category}
                             {(item.categories?.length ?? 0) > 1 && ` +${item.categories!.length - 1}`}
                           </span>
-                          {availWeekend && (
-                            <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-green-600">
-                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                              This weekend
-                            </span>
-                          )}
                           {!availForDates && (
                             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
                               <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-400 shadow">
@@ -587,22 +614,50 @@ useEffect(() => {
                               Request dates
                             </span>
                           </div>
-                        </div>
+                        </Link>
 
                         <div className="p-5 flex flex-col flex-1">
-                          <p className="font-bold text-[#143D60] leading-snug text-sm">{item.title}</p>
-                          {item.condition && (
-                            <p className={`mt-1 text-xs ${conditionColor[item.condition] ?? "text-gray-400"}`}>
-                              Condition: {item.condition}
-                            </p>
-                          )}
-                          {item.description && (
-                            <p className="mt-2 text-xs text-gray-400 leading-relaxed line-clamp-2">
-                              {item.description}
-                            </p>
-                          )}
+                          <Link href={`/gear/${item.id}`} className="contents">
+                            <p className="font-bold text-[#143D60] leading-snug text-sm">{item.title}</p>
+                            {item.condition && (
+                              <p className={`mt-1 text-xs ${conditionColor[item.condition] ?? "text-gray-400"}`}>
+                                Condition: {item.condition}
+                              </p>
+                            )}
+                            {item.description && (
+                              <p className="mt-2 text-xs text-gray-400 leading-relaxed line-clamp-2">
+                                {item.description}
+                              </p>
+                            )}
+                          </Link>
                           <div className="flex-1" />
-                          <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                        </div>
+
+                        {/* Footer - owner and price, their own section, separate from the description content above */}
+                        <div className="bg-gray-50/70 border-t border-gray-100">
+                          {owner && (
+                            <Link href={`/profile/${owner.id}`}
+                              className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 group/owner">
+                              <div className="relative w-6 h-6 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-[9px] shrink-0 overflow-hidden">
+                                {owner.avatar_url
+                                  ? <Image src={owner.avatar_url} alt={owner.full_name} fill className="object-cover" sizes="24px" />
+                                  : initials(owner.full_name)}
+                              </div>
+                              <span className="text-xs text-gray-500 group-hover/owner:text-[#143D60] transition-colors duration-200 truncate">
+                                {owner.full_name}
+                              </span>
+                              {ownerRating && ownerRating.count > 0 && (
+                                <span className="inline-flex items-center gap-0.5 text-xs text-[#143D60] font-semibold shrink-0">
+                                  <svg className="w-3 h-3 text-[#DDEB9D]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                  {ownerRating.avg.toFixed(1)}
+                                </span>
+                              )}
+                            </Link>
+                          )}
+                          <Link href={`/gear/${item.id}`}
+                            className="px-5 py-4 flex items-center justify-between">
                             <span className="text-lg font-bold text-[#143D60]">
                               ${item.price_per_day}
                               <span className="text-xs font-normal text-gray-400"> / day</span>
@@ -610,9 +665,9 @@ useEffect(() => {
                             <span className="text-xs font-semibold text-[#27667B] group-hover:text-[#143D60] transition-colors duration-200">
                               View details →
                             </span>
-                          </div>
+                          </Link>
                         </div>
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>

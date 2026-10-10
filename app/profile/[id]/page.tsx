@@ -39,6 +39,7 @@ const CONDITION_COLORS: Record<string, string> = {
 interface ProfileUser {
   id: string;
   full_name: string;
+  avatar_url: string | null;
   created_at: string;
 }
 
@@ -114,7 +115,7 @@ export default function ProfilePage() {
       // Profile user
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, full_name, created_at")
+        .select("id, full_name, avatar_url, created_at")
         .eq("id", profileId)
         .single();
 
@@ -253,8 +254,10 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
 
               {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-2xl flex-shrink-0 shadow-sm">
-                {initials(profile.full_name)}
+              <div className="relative w-20 h-20 rounded-full bg-[#DDEB9D] flex items-center justify-center text-[#143D60] font-bold text-2xl flex-shrink-0 shadow-sm overflow-hidden">
+                {profile.avatar_url
+                  ? <Image src={profile.avatar_url} alt={profile.full_name} fill className="object-cover" sizes="80px" />
+                  : initials(profile.full_name)}
               </div>
 
               {/* Info */}
