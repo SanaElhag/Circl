@@ -34,6 +34,13 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
+      // connected accounts are created through the v2 Accounts API now
+      // (see app/api/stripe/connect/route.ts), which doesn't fire this v1
+      // event - v2 uses a separate Event Destinations / Thin Events system
+      // that isn't wired up here. the real-time status update instead
+      // happens via the direct check in connect/status/route.ts, which
+      // DashboardShell calls right when someone returns from onboarding.
+      // left in case any pre-migration v1 accounts still exist.
       case "account.updated": {
         const account = event.data.object as Stripe.Account;
         await supabase
