@@ -22,6 +22,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
+function categoryLabel(l: { category: string; categories: string[] | null }) {
+  return (l.categories?.length ? l.categories : [l.category])
+    .map((c) => CATEGORY_LABELS[c] ?? c)
+    .join(" · ");
+}
+
 const CONDITION_COLORS: Record<string, string> = {
   "New":      "bg-[#DDEB9D] text-[#143D60]",
   "Like new": "bg-[#A0C878]/20 text-[#27667B]",
@@ -40,6 +46,7 @@ interface Listing {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   price_per_day: number;
   condition: string;
   image_url: string | null;
@@ -121,7 +128,7 @@ export default function ProfilePage() {
       // Listings (only available ones for public profile)
       const { data: listingData } = await supabase
         .from("listings")
-        .select("id, title, category, price_per_day, condition, image_url, available, description")
+        .select("id, title, category, categories, price_per_day, condition, image_url, available, description")
         .eq("user_id", profileId)
         .eq("available", true)
         .order("created_at", { ascending: false });
@@ -389,7 +396,7 @@ export default function ProfilePage() {
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       />
                       <span className="absolute top-3 right-3 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-semibold text-white capitalize">
-                        {CATEGORY_LABELS[item.category] ?? item.category}
+                        {categoryLabel(item)}
                       </span>
                       {item.condition && (
                         <span className={`absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${CONDITION_COLORS[item.condition] ?? "bg-gray-100 text-gray-600"}`}>

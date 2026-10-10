@@ -64,6 +64,7 @@ interface ListingRow {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   price_per_day: number;
   available: boolean;
   created_at: string;
@@ -1041,7 +1042,7 @@ function ListingsPanel() {
     const { data } = await supabase
       .from("listings")
       .select(
-        `id, title, category, price_per_day, available, created_at,
+        `id, title, category, categories, price_per_day, available, created_at,
          users!listings_user_id_fkey ( full_name )`
       )
       .order("created_at", { ascending: false });
@@ -1090,7 +1091,9 @@ function ListingsPanel() {
   const filtered = (listings ?? []).filter(
     (l) =>
       l.title.toLowerCase().includes(search.toLowerCase()) ||
-      l.category.toLowerCase().includes(search.toLowerCase()) ||
+      (l.categories?.length ? l.categories : [l.category]).some((c) =>
+        c.toLowerCase().includes(search.toLowerCase())
+      ) ||
       l.users?.full_name?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -1139,7 +1142,7 @@ function ListingsPanel() {
                     {l.users?.full_name ?? "—"}
                   </td>
                   <td className="px-5 py-3 text-gray-500 hidden lg:table-cell capitalize">
-                    {l.category}
+                    {(l.categories?.length ? l.categories : [l.category]).join(", ")}
                   </td>
                   <td className="px-5 py-3 text-gray-700 font-semibold">${l.price_per_day}</td>
                   <td className="px-5 py-3 text-right">

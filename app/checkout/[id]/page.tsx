@@ -12,6 +12,7 @@ interface Listing {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   price_per_day: number;
   image_url: string | null;
   condition: string;
@@ -62,7 +63,7 @@ function CheckoutContent() {
 
       const { data, error: fetchErr } = await supabase
         .from("listings")
-        .select("id, title, category, price_per_day, image_url, condition, user_id")
+        .select("id, title, category, categories, price_per_day, image_url, condition, user_id")
         .eq("id", listingId)
         .single();
 
@@ -260,7 +261,7 @@ function CheckoutContent() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#27667B] mb-1">
-                {listing.category.replace("-", " ")}
+                {(listing.categories ?? [listing.category]).map((c) => c.replace("-", " ")).join(" · ")}
               </p>
               <h2 className="font-bold text-[#143D60] text-lg leading-tight">{listing.title}</h2>
               <p className="text-gray-500 text-sm mt-1">Condition: <span className="text-gray-700">{listing.condition}</span></p>

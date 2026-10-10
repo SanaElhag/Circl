@@ -13,6 +13,7 @@ export interface RawListingBasic {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   image_url: string | null;
   price_per_day: number;
   users: ListingUser[];          // always array from Supabase join
@@ -56,6 +57,7 @@ export interface ListingBasic {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   image_url: string | null;
   price_per_day: number;
   users: ListingUser | null;
@@ -85,6 +87,7 @@ export interface OwnerListing {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   image_url: string | null;
   price_per_day: number;
   available: boolean;

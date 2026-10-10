@@ -42,7 +42,7 @@ const MAX_PHOTOS = 5;
 
 interface FormState {
   title: string;
-  category: string;
+  categories: string[];
   price_per_day: string;
   condition: string;
   description: string;
@@ -84,7 +84,7 @@ export default function EditGearPage() {
   const [deleteConfirm, setDeleteConfirm]     = useState("");
   const [error, setError]         = useState<string | null>(null);
   const [form, setForm]           = useState<FormState>({
-    title: "", category: "", price_per_day: "",
+    title: "", categories: [], price_per_day: "",
     condition: "", description: "",
     available_from: "", available_until: "", available: true,
   });
@@ -119,7 +119,7 @@ export default function EditGearPage() {
 
       setForm({
         title:          listing.title ?? "",
-        category:       listing.category ?? "",
+        categories:     listing.categories ?? (listing.category ? [listing.category] : []),
         price_per_day:  String(listing.price_per_day ?? ""),
         condition:      listing.condition ?? "",
         description:    listing.description ?? "",
@@ -150,8 +150,17 @@ export default function EditGearPage() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  function set(field: keyof FormState, value: string | boolean) {
+  function set(field: Exclude<keyof FormState, "categories">, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleCategory(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(value)
+        ? prev.categories.filter((c) => c !== value)
+        : [...prev.categories, value],
+    }));
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -181,7 +190,7 @@ export default function EditGearPage() {
   async function handleSave() {
     setError(null);
     if (!form.title.trim())   return setError("Please add a title.");
-    if (!form.category)        return setError("Please select a category.");
+    if (form.categories.length === 0) return setError("Please select at least one category.");
     if (!form.price_per_day || isNaN(Number(form.price_per_day)) || Number(form.price_per_day) <= 0)
       return setError("Please enter a valid price per day.");
     if (!form.condition)       return setError("Please select a condition.");
@@ -232,7 +241,8 @@ export default function EditGearPage() {
         .from("listings")
         .update({
           title:          form.title.trim(),
-          category:       form.category,
+          category:       form.categories[0],
+          categories:     form.categories,
           price_per_day:  Number(form.price_per_day),
           condition:      form.condition,
           description:    form.description.trim() || null,
@@ -443,14 +453,18 @@ export default function EditGearPage() {
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-[#143D60] mb-2.5">Category</label>
+              <label className="block text-sm font-semibold text-[#143D60] mb-2.5">
+                Category
+                <span className="text-gray-400 font-normal ml-1">(pick all that apply)</span>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.value}
-                    onClick={() => set("category", cat.value)}
+                    type="button"
+                    onClick={() => toggleCategory(cat.value)}
                     className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
-                      form.category === cat.value
+                      form.categories.includes(cat.value)
                         ? "bg-[#143D60] text-white border-[#143D60]"
                         : "bg-white text-gray-500 border-gray-200 hover:border-[#143D60] hover:text-[#143D60]"
                     }`}

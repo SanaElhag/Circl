@@ -35,9 +35,11 @@ export default async function GearDetailPage({
 
   if (error || !listing) notFound();
 
-  const [{ data: ownerData }, { data: categoryData }, { data: listingImages }, { data: ratingRows }] = await Promise.all([
+  const categorySlugs: string[] = listing.categories ?? (listing.category ? [listing.category] : []);
+
+  const [{ data: ownerData }, { data: categoryRows }, { data: listingImages }, { data: ratingRows }] = await Promise.all([
     supabase.from("users").select("full_name, stripe_charges_enabled").eq("id", listing.user_id).single(),
-    supabase.from("categories").select("name").eq("slug", listing.category).single(),
+    supabase.from("categories").select("name, slug").in("slug", categorySlugs),
     // table name is "listing_images", singular
     supabase.from("listing_images").select("id, url, position").eq("listing_id", id).order("position"),
     // calculated from real reviews instead of a rating column that nothing updates
@@ -52,7 +54,12 @@ export default async function GearDetailPage({
   const rating: number | null = reviewCount > 0
     ? gearRatings.reduce((sum, r) => sum + r.gear_rating, 0) / reviewCount
     : null;
-  const categoryLabel = (categoryData as { name: string } | null)?.name ?? listing.category;
+  const categoryNames = new Map(
+    ((categoryRows ?? []) as { name: string; slug: string }[]).map((c) => [c.slug, c.name])
+  );
+  const categoryLabel = categorySlugs.length > 0
+    ? categorySlugs.map((slug) => categoryNames.get(slug) ?? slug).join(" · ")
+    : listing.category;
 
   // Sort listing_images by position; fall back to image_url if none
   const extraImages: { id: string; url: string; position: number }[] =

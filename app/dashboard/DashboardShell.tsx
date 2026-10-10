@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import BorrowerDashboard from "./BorrowerDashboard";
-import OwnerDashboard from "./OwnerDashboard";
+import OwnerDashboard, { type OwnerTab } from "./OwnerDashboard";
 import { Skeleton } from "@/app/components/Skeleton";
 import {
   normaliseBorrowerRequest,
@@ -38,6 +38,7 @@ export default function DashboardShell() {
   const [data, setData]       = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("");
+  const [ownerTab, setOwnerTab] = useState<OwnerTab | undefined>(undefined);
 
   useEffect(() => {
     async function load() {
@@ -64,7 +65,7 @@ export default function DashboardShell() {
           .select(`
             id, status, start_date, end_date, created_at,
             listings (
-              id, title, category, image_url, price_per_day,
+              id, title, category, categories, image_url, price_per_day,
               users!listings_user_id_fkey ( id, full_name )
             )
           `)
@@ -78,7 +79,7 @@ export default function DashboardShell() {
 
         supabase
           .from("listings")
-          .select("id, title, category, image_url, price_per_day, available, condition, created_at")
+          .select("id, title, category, categories, image_url, price_per_day, available, condition, created_at")
           .eq("user_id", uid)
           .order("created_at", { ascending: false }),
 
@@ -96,8 +97,15 @@ export default function DashboardShell() {
 
       let stripeChargesEnabled = !!userRow?.stripe_charges_enabled;
 
-      // Returning from Stripe Connect onboarding — force a fresh status check
       const searchParams = new URLSearchParams(window.location.search);
+
+      if (searchParams.get("mode") === "owner") setMode("owner");
+      const tabParam = searchParams.get("tab");
+      if (tabParam === "summary" || tabParam === "requests" || tabParam === "listings") {
+        setOwnerTab(tabParam);
+      }
+
+      // Returning from Stripe Connect onboarding — force a fresh status check
       if (searchParams.get("stripe") === "return") {
         const res = await fetch("/api/stripe/connect/status", {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -225,6 +233,7 @@ export default function DashboardShell() {
             ownerRatings={data.ownerRatings}
             userId={data.userId}
             stripeChargesEnabled={data.stripeChargesEnabled}
+            initialTab={ownerTab}
           />
         )}
       </div>

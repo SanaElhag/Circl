@@ -28,6 +28,7 @@ type Listing = {
   id: string;
   title: string;
   category: string;
+  categories: string[] | null;
   price_per_day: number;
   description: string;
   available: boolean;
@@ -146,7 +147,7 @@ useEffect(() => {
         .order("created_at", { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
-      if (urlCategory) query = query.eq("category", urlCategory);
+      if (urlCategory) query = query.contains("categories", [urlCategory]);
       if (selectedConditions.length > 0) query = query.in("condition", selectedConditions);
       query = query.gte("price_per_day", minPrice).lte("price_per_day", maxPrice);
 
@@ -193,7 +194,7 @@ useEffect(() => {
       .order("created_at", { ascending: false })
       .range(from, to);
 
-    if (urlCategory) query = query.eq("category", urlCategory);
+    if (urlCategory) query = query.contains("categories", [urlCategory]);
     if (selectedConditions.length > 0) query = query.in("condition", selectedConditions);
     query = query.gte("price_per_day", minPrice).lte("price_per_day", maxPrice);
 
@@ -566,6 +567,7 @@ useEffect(() => {
                           />
                           <span className="absolute top-3 right-3 rounded-full bg-black/30 backdrop-blur-sm px-3 py-1 text-[10px] font-semibold text-white capitalize">
                             {item.category}
+                            {(item.categories?.length ?? 0) > 1 && ` +${item.categories!.length - 1}`}
                           </span>
                           {availWeekend && (
                             <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-green-600">

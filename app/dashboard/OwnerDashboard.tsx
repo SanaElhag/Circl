@@ -12,6 +12,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
+function categoryLabel(l: { category: string; categories: string[] | null }) {
+  return (l.categories?.length ? l.categories : [l.category])
+    .map((c) => CATEGORY_LABELS[c] ?? c)
+    .join(" · ");
+}
+
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function diffDays(a: string, b: string) {
@@ -220,18 +226,19 @@ function RequestCard({ request, onStatusChange }: {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type OwnerTab = "summary" | "requests" | "listings";
+export type OwnerTab = "summary" | "requests" | "listings";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function OwnerDashboard({ listings, requests, ownerRatings, stripeChargesEnabled }: {
+export default function OwnerDashboard({ listings, requests, ownerRatings, stripeChargesEnabled, initialTab }: {
   listings: OwnerListing[];
   requests: OwnerRequest[];
   ownerRatings: OwnerRating[];
   userId: string;
   stripeChargesEnabled: boolean;
+  initialTab?: OwnerTab;
 }) {
-  const [tab,         setTab]         = useState<OwnerTab>("summary");
+  const [tab,         setTab]         = useState<OwnerTab>(initialTab ?? "summary");
   const [requestList, setRequestList] = useState<OwnerRequest[]>(requests);
   const [listingList, setListingList] = useState<OwnerListing[]>(listings);
   const [connecting,  setConnecting]  = useState(false);
@@ -465,7 +472,7 @@ export default function OwnerDashboard({ listings, requests, ownerRatings, strip
                         {l.title}
                       </Link>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {CATEGORY_LABELS[l.category] ?? l.category} · {l.condition}
+                        {categoryLabel(l)} · {l.condition}
                       </p>
                       <p className="text-sm font-bold text-[#143D60] mt-1">${l.price_per_day}/day</p>
                     </div>

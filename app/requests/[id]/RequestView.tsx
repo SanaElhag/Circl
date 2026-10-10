@@ -22,7 +22,7 @@ type RequestStatus =
 
 interface RequestUser { id: string; full_name: string; email: string }
 interface Listing {
-  id: string; title: string; category: string;
+  id: string; title: string; category: string; categories: string[] | null;
   image_url: string | null; price_per_day: number;
   available_from: string | null; available_until: string | null;
   condition: string;
@@ -85,6 +85,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   camping: "Camping", climbing: "Climbing", "water-sports": "Water Sports",
   cycling: "Cycling", fishing: "Fishing",
 };
+
+function categoryLabel(l: { category: string; categories: string[] | null } | null | undefined) {
+  if (!l) return "";
+  return (l.categories?.length ? l.categories : [l.category])
+    .map((c) => CATEGORY_LABELS[c] ?? c)
+    .join(" · ");
+}
 
 // ─── Status timeline ──────────────────────────────────────────────────────────
 
@@ -638,7 +645,7 @@ export default function RequestView({
           owner_comment, requester_note,
           owner_delivered, requester_received, received_photos,
           listings (
-            id, title, category, image_url, price_per_day,
+            id, title, category, categories, image_url, price_per_day,
             available_from, available_until, condition,
             users!listings_user_id_fkey ( id, full_name, email )
           ),
@@ -828,7 +835,7 @@ export default function RequestView({
                   <Link href={`/gear/${listing?.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200">
                     {listing?.title}
                   </Link>
-                  <p className="text-xs text-gray-400 mt-0.5">{CATEGORY_LABELS[listing?.category ?? ""] ?? listing?.category} · {listing?.condition}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{categoryLabel(listing)} · {listing?.condition}</p>
                   <p className="text-sm font-bold text-[#143D60] mt-1">${listing?.price_per_day}/day</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-400">
                     {request.start_date && <span>From {fmtDate(request.start_date)}</span>}

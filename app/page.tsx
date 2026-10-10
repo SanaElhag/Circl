@@ -81,7 +81,7 @@ async function getHomeData() {
     await Promise.all([
       supabase
         .from("listings")
-        .select("id, title, category, price_per_day, condition, image_url, description")
+        .select("id, title, category, categories, price_per_day, condition, image_url, description")
         .eq("available", true)
         .order("created_at", { ascending: false })
         .limit(3),
@@ -236,6 +236,7 @@ export default async function HomePage() {
                     {/* Category pill */}
                     <span className="absolute top-3 right-3 rounded-full bg-[#143D60]/70 backdrop-blur-sm px-3 py-1 text-[10px] font-semibold text-white capitalize tracking-wide">
                       {item.category}
+                      {(item.categories?.length ?? 0) > 1 && ` +${item.categories!.length - 1}`}
                     </span>
                     {/* Condition pill */}
                     {item.condition && (

@@ -1,4 +1,4 @@
 import { redirect } from "next/navigation";
 export default function MyGearPage() {
-  redirect("/dashboard");
+  redirect("/dashboard?mode=owner&tab=listings");
 }

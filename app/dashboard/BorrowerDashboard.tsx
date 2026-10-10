@@ -17,6 +17,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
+function categoryLabel(l: { category: string; categories: string[] | null } | null | undefined) {
+  if (!l) return "";
+  return (l.categories?.length ? l.categories : [l.category])
+    .map((c) => CATEGORY_LABELS[c] ?? c)
+    .join(" · ");
+}
+
 // Rental history is grouped by this, not the raw db status — an "accepted"
 // request whose end date has passed reads a lot better as "Completed"
 type HistoryGroup = "pending" | "accepted" | "completed" | "declined" | "cancelled";
@@ -210,7 +217,7 @@ function HistoryCard({ r, canRate, rated, onRate }: {
         <Link href={`/gear/${listing?.id}`} className="font-bold text-[#143D60] hover:text-[#27667B] transition-colors duration-200 text-sm block truncate">
           {listing?.title ?? "Listing"}
         </Link>
-        <p className="text-xs text-gray-400 mt-0.5">{CATEGORY_LABELS[listing?.category ?? ""] ?? listing?.category}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{categoryLabel(listing)}</p>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
           {r.start_date && r.end_date && (

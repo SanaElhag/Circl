@@ -19,6 +19,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   cycling: "Cycling", fishing: "Fishing",
 };
 
+function categoryLabel(convo: { listingCategory: string; listingCategories: string[] | null }) {
+  return (convo.listingCategories?.length ? convo.listingCategories : [convo.listingCategory])
+    .map((c) => CATEGORY_LABELS[c] ?? c)
+    .join(" · ");
+}
+
 const STATUS_META: Record<string, { label: string; color: string }> = {
   pending:   { label: "Pending",   color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
   accepted:  { label: "Accepted",  color: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -33,6 +39,7 @@ interface Conversation {
   requestId: string;
   listingTitle: string;
   listingCategory: string;
+  listingCategories: string[] | null;
   listingImage: string | null;
   listingId: string;
   otherParty: { id: string; full_name: string };
@@ -70,7 +77,7 @@ export default function MessagesPage() {
       .select(`
         id, status,
         listings!inner (
-          id, title, category, image_url,
+          id, title, category, categories, image_url,
           users!listings_user_id_fkey ( id, full_name )
         ),
         users!requests_requester_id_fkey ( id, full_name )
@@ -128,6 +135,7 @@ export default function MessagesPage() {
         listingId:       listing.id,
         listingTitle:    listing.title,
         listingCategory: listing.category,
+        listingCategories: listing.categories,
         listingImage:    listing.image_url,
         otherParty,
         status:          req.status,
@@ -313,7 +321,7 @@ export default function MessagesPage() {
                           {convo.listingTitle}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {CATEGORY_LABELS[convo.listingCategory] ?? convo.listingCategory}
+                          {categoryLabel(convo)}
                           {" · "}
                           {convo.otherParty.full_name}
                         </p>

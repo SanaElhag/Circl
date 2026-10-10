@@ -43,7 +43,7 @@ interface LocalPhoto {
 
 interface FormState {
   title: string;
-  category: string;
+  categories: string[];
   price_per_day: string;
   condition: string;
   description: string;
@@ -53,7 +53,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   title: "",
-  category: "",
+  categories: [],
   price_per_day: "",
   condition: "",
   description: "",
@@ -89,8 +89,17 @@ export default function PostGearPage() {
     return () => photos.forEach((p) => URL.revokeObjectURL(p.preview));
   }, [photos]);
 
-  function set(field: keyof FormState, value: string) {
+  function set(field: Exclude<keyof FormState, "categories">, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleCategory(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(value)
+        ? prev.categories.filter((c) => c !== value)
+        : [...prev.categories, value],
+    }));
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -122,7 +131,7 @@ export default function PostGearPage() {
     setError(null);
 
     if (!form.title.trim())         return setError("Please add a title.");
-    if (!form.category)             return setError("Please select a category.");
+    if (form.categories.length === 0) return setError("Please select at least one category.");
     if (!form.price_per_day || isNaN(Number(form.price_per_day)) || Number(form.price_per_day) <= 0)
       return setError("Please enter a valid price per day.");
     if (!form.condition)            return setError("Please select a condition.");
@@ -157,7 +166,8 @@ export default function PostGearPage() {
         .insert({
           user_id:        user.id,
           title:          form.title.trim(),
-          category:       form.category,
+          category:       form.categories[0],
+          categories:     form.categories,
           price_per_day:  Number(form.price_per_day),
           condition:      form.condition,
           description:    form.description.trim() || null,
@@ -336,15 +346,16 @@ export default function PostGearPage() {
             <div>
               <label className="block text-sm font-semibold text-[#143D60] mb-2.5">
                 Category
+                <span className="text-gray-400 font-normal ml-1">(pick all that apply)</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.value}
                     type="button"
-                    onClick={() => set("category", cat.value)}
+                    onClick={() => toggleCategory(cat.value)}
                     className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
-                      form.category === cat.value
+                      form.categories.includes(cat.value)
                         ? "bg-[#143D60] text-white border-[#143D60]"
                         : "bg-white text-gray-500 border-gray-200 hover:border-[#143D60] hover:text-[#143D60]"
                     }`}
